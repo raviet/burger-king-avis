@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Votre avis – Burger King</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="card">
+    <div class="logo">🍔</div>
+    <div class="brand">Burger King</div>
+
+    <div class="divider"></div>
+
+    <!-- Formulaire d'avis -->
+    <div id="form-section">
+      <h1>Nous sommes désolés</h1>
+      <p class="subtitle">Votre avis nous aide à nous améliorer. Dites-nous ce qui ne s'est pas bien passé.</p>
+
+      <div class="stars-display" id="stars-display"></div>
+      <p class="note-label" id="note-label"></p>
+
+      <form id="feedback-form" novalidate>
+        <textarea
+          id="message"
+          name="message"
+          placeholder="Décrivez votre expérience…"
+          required
+          maxlength="1000"
+          aria-label="Votre commentaire"
+        ></textarea>
+
+        <button type="submit" class="btn" id="submit-btn">Envoyer mon avis</button>
+      </form>
+
+      <p class="status" id="status-msg"></p>
+    </div>
+
+    <!-- Message de remerciement (affiché après envoi) -->
+    <div class="thank-you" id="thank-you">
+      <div class="check">✅</div>
+      <h2>Merci pour votre retour !</h2>
+      <p>Votre avis a bien été transmis à notre équipe.<br>Nous ferons de notre mieux pour nous améliorer.</p>
+    </div>
+  </div>
+
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="feedback.js"></script>
+</body>
+</html>
