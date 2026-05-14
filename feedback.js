@@ -1,16 +1,4 @@
-// ── À PERSONNALISER ──────────────────────────────────────────────
-const EMAILJS_PUBLIC_KEY = 'D18LEiL2bm2tel9Pa';
-const EMAILJS_SERVICE_ID = 'service_dot93tq';
-const EMAILJS_TEMPLATE_ID = 'template_rzqleej';
-// ─────────────────────────────────────────────────────────────────
-// Template EmailJS : créez un template avec ces variables :
-//   {{stars}}    → note donnée par le client
-//   {{message}}  → texte de l'avis
-//   {{date}}     → date et heure de l'envoi
-// L'email destinataire est à configurer directement dans EmailJS.
-// ─────────────────────────────────────────────────────────────────
-
-emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+const WEB3FORMS_KEY = '39c512ae-ad7f-4a07-8b89-474adc23c163';
 
 const params     = new URLSearchParams(window.location.search);
 const stars      = Math.max(1, Math.min(4, parseInt(params.get('stars'), 10) || 1));
@@ -32,23 +20,31 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
     return;
   }
 
-  submitBtn.disabled  = true;
+  submitBtn.disabled    = true;
   submitBtn.textContent = 'Envoi en cours…';
   statusEl.textContent  = '';
   statusEl.className    = 'status';
 
   try {
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      stars:   stars + '/5',
-      message: message,
-      date:    new Date().toLocaleString('fr-FR'),
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject:    `Avis client BK – ${stars}/5`,
+        stars:      stars + '/5',
+        message:    message,
+        date:       new Date().toLocaleString('fr-FR'),
+      }),
     });
 
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message);
+
     document.getElementById('form-section').style.display = 'none';
-    const thankYou = document.getElementById('thank-you');
-    thankYou.style.display = 'flex';
+    document.getElementById('thank-you').style.display    = 'flex';
   } catch (err) {
-    console.error('EmailJS error:', err);
+    console.error('Web3Forms error:', err);
     statusEl.textContent = 'Une erreur est survenue. Veuillez réessayer.';
     statusEl.className   = 'status error';
     submitBtn.disabled   = false;
