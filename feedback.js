@@ -1,7 +1,7 @@
 // ── À PERSONNALISER ──────────────────────────────────────────────
-const EMAILJS_PUBLIC_KEY = 'YOUR_PUBLIC_KEY';
-const EMAILJS_SERVICE_ID = 'YOUR_SERVICE_ID';
-const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';
+const EMAILJS_PUBLIC_KEY = 'D18LEiL2bm2tel9Pa';
+const EMAILJS_SERVICE_ID = 'service_dot93tq';
+const EMAILJS_TEMPLATE_ID = 'template_rzqleej';
 // ─────────────────────────────────────────────────────────────────
 // Template EmailJS : créez un template avec ces variables :
 //   {{stars}}    → note donnée par le client
