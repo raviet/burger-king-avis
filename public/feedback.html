@@ -47,6 +47,15 @@
         <p class="status" id="status-msg"></p>
       </div>
 
+      <!-- Merci simple (roulette désactivée) -->
+      <div id="merci-section" style="display:none;flex-direction:column;align-items:center;gap:16px;padding:32px 0">
+        <div class="check-wrap">
+          <img class="check" src="images/check.png" alt="✓" />
+          <h2>Merci !</h2>
+        </div>
+        <p class="subtitle">Votre avis a bien été transmis.<br>À très bientôt chez Burger King !</p>
+      </div>
+
       <!-- Roulette (après envoi) -->
       <div id="roulette-section" class="roulette-section" style="display:none">
 
@@ -81,6 +90,8 @@
 
   <div class="bk-footer-strip"></div>
 
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="feedback.js"></script>
 </body>
 </html>

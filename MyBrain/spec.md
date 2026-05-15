@@ -34,9 +34,12 @@ QR Code → index.html (étoiles 1-5)
 - **Frontend** : HTML / CSS / JS vanilla (pas de framework)
 - **Hébergement** : Firebase Hosting (plan Spark, gratuit)
 - **Email** : Web3Forms (gratuit, 250 soumissions/mois)
-- **Firebase project** : `burger-king-avis`
+- **Base de données** : Firestore (`config/settings { roulette_enabled: bool }`)
+- **Auth** : Firebase Auth Email/Password (compte admin uniquement)
+- **Firebase project** : `burger-king-avis` | App ID : `1:756976293842:web:0c9cb6d0094c4cda545a0b`
 - **Repo** : `~/Projet/burger-king-avis` → `github.com/raviet/burger-king-avis`
 - **URL live** : https://burger-king-avis.web.app
+- **Admin** : https://burger-king-avis.web.app/admin
 
 ### Structure repo
 
@@ -44,15 +47,18 @@ QR Code → index.html (étoiles 1-5)
 burger-king-avis/
 ├── public/                ← fichiers servis par Firebase Hosting
 │   ├── index.html         — page de notation (5 étoiles)
-│   ├── feedback.html      — formulaire avis négatifs + roulette
+│   ├── feedback.html      — formulaire avis négatifs + roulette (ou merci simple)
+│   ├── admin.html         — dashboard admin : login + toggle roulette
 │   ├── 404.html
 │   ├── script.js          — redirection selon note
-│   ├── feedback.js        — envoi email Web3Forms + roulette canvas
+│   ├── feedback.js        — envoi email Web3Forms + lecture config Firestore + roulette canvas
+│   ├── admin.js           — Firebase Auth + Firestore config toggle
 │   ├── style.css          — design BK charte 2023, responsive mobile
 │   └── images/            — photos produits BK (nuggets, cheeseburger, onion-rings, king-fusion, muffin)
 ├── tests/test.js          ← 50 tests unitaires Node.js (sans dépendance)
 ├── hooks/post-commit      ← génère BurgerKingAvisGit.md dans vault
-├── firebase.json
+├── firestore.rules        ← règles Firestore (read public, write auth)
+├── firebase.json          ← hosting (cleanUrls: true) + firestore
 └── README.md
 ```
 
@@ -64,11 +70,20 @@ burger-king-avis/
   ├── Formulaire (textarea + submit)
   │     └── Web3Forms API → email direction (avec selectedStars)
   │     Note : 5★ ici → email, pas redirect Google
-  └── Roulette canvas (après envoi)
-        ├── 5 prizes : 4 Nuggets / Cheeseburger / King Fusion M&M's / 6 Onion Rings / Pâtisserie
-        ├── Photos produits officielles BK (PNG fond transparent)
-        ├── Spin → prize reveal couleur dynamique (darkenHex) + confettis
-        └── ?debug bypass Web3Forms (dev only)
+  └── Post-submit : lit Firestore config/settings.roulette_enabled
+        ├── true  → Roulette canvas
+        │     ├── 5 prizes : 4 Nuggets / Cheeseburger / King Fusion M&M's / 6 Onion Rings / Pâtisserie
+        │     ├── Photos produits officielles BK (PNG fond transparent)
+        │     └── Spin → prize reveal couleur dynamique (darkenHex) + confettis
+        └── false → Merci simple (check + message remerciement)
+```
+
+### Flow admin.html
+
+```
+/admin → login Firebase Auth (Email/Password)
+  └── Dashboard : toggle roulette_enabled
+        └── onSnapshot Firestore config/settings → UI en temps réel
 ```
 
 ### Design system (BK charte 2023)
@@ -97,5 +112,6 @@ burger-king-avis/
 
 ## À venir
 
-- Firestore pour stocker les avis en base (complément ou remplacement email)
+- Finaliser login admin (reset password Firebase en cours)
+- Firestore pour stocker les avis en base (complément email — différent du config Firestore)
 - QR code à générer et imprimer en restaurant

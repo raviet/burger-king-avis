@@ -2,6 +2,21 @@
 // qu'à l'envoi d'emails vers l'adresse liée au compte, pas à la facturation.
 const WEB3FORMS_KEY = '39c512ae-ad7f-4a07-8b89-474adc23c163';
 
+firebase.initializeApp({
+  apiKey:            'AIzaSyBcHaY5Zdy6pLqq1PxYcMSMr-NqCOCvhj4',
+  authDomain:        'burger-king-avis.firebaseapp.com',
+  projectId:         'burger-king-avis',
+  storageBucket:     'burger-king-avis.firebasestorage.app',
+  messagingSenderId: '756976293842',
+  appId:             '1:756976293842:web:0c9cb6d0094c4cda545a0b',
+});
+const db = firebase.firestore();
+
+let rouletteEnabled = true;
+const configPromise = db.collection('config').doc('settings').get()
+  .then(doc => { if (doc.exists) rouletteEnabled = doc.data().roulette_enabled !== false; })
+  .catch(() => {});
+
 const params     = new URLSearchParams(window.location.search);
 const stars      = Math.max(1, Math.min(4, parseInt(params.get('stars'), 10) || 1));
 const starLabels = ['', 'Très mauvais', 'Décevant', 'Correct', 'Bien', 'Excellent !'];
@@ -83,9 +98,14 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
     const data = await res.json();
     if (!data.success) throw new Error(data.message);
 
-    document.getElementById('form-section').style.display       = 'none';
-    document.getElementById('roulette-section').style.display   = 'flex';
-    drawWheel(currentAngle);
+    await configPromise;
+    document.getElementById('form-section').style.display = 'none';
+    if (rouletteEnabled) {
+      document.getElementById('roulette-section').style.display = 'flex';
+      drawWheel(currentAngle);
+    } else {
+      document.getElementById('merci-section').style.display = 'flex';
+    }
   } catch (err) {
     console.error('Web3Forms error:', err);
     statusEl.textContent = 'Une erreur est survenue. Veuillez réessayer.';

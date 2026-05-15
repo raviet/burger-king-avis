@@ -115,3 +115,24 @@ parent: "[[BurgerKingAvis/spec]]"
 **Décision** : À implémenter en complément de Web3Forms (pas remplacement). Les avis consultables depuis Firebase console.
 
 **Conséquences** : Nécessitera plan Blaze si Cloud Functions utilisées. Firestore seul (write client) reste plan Spark.
+
+---
+
+## Dashboard admin + config roulette via Firestore
+
+**Contexte** : Besoin de pouvoir activer/désactiver la roulette sans redéployer (ex: stock épuisé, maintenance).
+
+**Décision** : Firestore document `config/settings { roulette_enabled: bool }`. Admin dashboard (`admin.html`) avec Firebase Auth Email/Password. Toggle switch → écrit dans Firestore. `feedback.js` lit la config au load et branche post-submit : roulette si enabled, merci simple sinon.
+
+**Conséquences** : Firebase SDK compat v10 ajouté dans feedback.html et admin.html (CDN). Firestore rules : read public, write auth. `cleanUrls: true` dans firebase.json pour URL `/admin` propre.
+
+---
+
+## Firebase web app enregistrée (session 2026-05-16)
+
+**Contexte** : Le projet Firebase `burger-king-avis` n'avait pas d'app web enregistrée (`.firebaserc` vide, aucun SDK config disponible).
+
+**Décision** : Enregistrement via Firebase MCP → app ID `1:756976293842:web:0c9cb6d0094c4cda545a0b`. Config SDK stockée dans `admin.js` et `feedback.js`.
+
+**Conséquences** : API key exposée côté client (`AIzaSyBcHaY5...`) — acceptable, clé publique Firebase restreinte à ce domaine.
+

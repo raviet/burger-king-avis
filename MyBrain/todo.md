@@ -12,6 +12,7 @@ parent: "[[BurgerKingAvis/spec]]"
 -
 
 ## À faire
+- [ ] Finaliser login admin : compléter reset password Firebase → tester toggle roulette
 - [ ] Générer QR code → https://burger-king-avis.web.app → imprimer en restaurant
 - [ ] Implémenter Firestore pour stocker les avis (alternative/complément email)
 
@@ -35,3 +36,8 @@ parent: "[[BurgerKingAvis/spec]]"
 - [x] Fond page dégradé BK sunset (dark → red → orange → yellow → cream)
 - [x] Étoiles interactives feedback.html (selectedStars 1-5, 5★ → email)
 - [x] Fix scroll horizontal mobile (overflow-x: hidden)
+- [x] Dashboard admin `admin.html` + `admin.js` (Firebase Auth + toggle roulette)
+- [x] Firestore `config/settings { roulette_enabled }` + rules (read public, write auth)
+- [x] `feedback.js` lecture config Firestore + branche roulette vs merci simple
+- [x] `cleanUrls: true` dans firebase.json → `/admin` accessible sans extension
+- [x] Firebase web app enregistrée + deploy firestore rules + hosting
