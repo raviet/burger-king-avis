@@ -1,0 +1,5 @@
+#!/bin/bash
+VAULT="/Users/tibo/Library/Mobile Documents/com~apple~CloudDocs/💾📦🦁 - BDD/MyBrain/MyBrain 🧠/10-Projets/BurgerKingAvis"
+DEST="$(git rev-parse --show-toplevel)/MyBrain"
+find "$VAULT" -maxdepth 1 -type f ! -name "*Git*" -exec cp {} "$DEST/" \;
+git add MyBrain/
