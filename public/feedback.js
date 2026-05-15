@@ -192,8 +192,13 @@ function spin() {
 }
 
 function showPrize(winner) {
-  document.getElementById('prize-emoji').textContent = PRIZES[winner].emoji;
-  document.getElementById('prize-name').textContent  = PRIZES[winner].label;
+  const emojiEl = document.getElementById('prize-emoji');
+  emojiEl.innerHTML = '';
+  const img = document.createElement('img');
+  img.src = PRIZES[winner].imgSrc;
+  img.alt = PRIZES[winner].label;
+  emojiEl.appendChild(img);
+  document.getElementById('prize-name').textContent = PRIZES[winner].label;
   const el = document.getElementById('prize-reveal');
   el.style.display   = 'flex';
   // Rejoue l'animation à chaque appel (reset nécessaire avant de réassigner)
