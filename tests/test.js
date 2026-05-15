@@ -20,10 +20,11 @@ function test(name, fn) {
 // ─── Helpers copiés fidèlement depuis les sources ───────────────────────────
 
 const PRIZES = [
-  { emoji: '🍗', label: '4 Nuggets',     color: '#D62300', textColor: '#fff' },
-  { emoji: '🍔', label: 'Cheeseburger',  color: '#F5A623', textColor: '#1A1A1A' },
-  { emoji: '🍦', label: 'Sundae',        color: '#1A1A1A', textColor: '#fff' },
-  { emoji: '🧅', label: '6 Onion Rings', color: '#502314', textColor: '#fff' },
+  { imgSrc: 'images/nuggets.png',     label: '4 Nuggets',          color: '#D62300', textColor: '#fff'    },
+  { imgSrc: 'images/cheeseburger.png',label: 'Cheeseburger',       color: '#FF8732', textColor: '#fff'    },
+  { imgSrc: 'images/king-fusion.png', label: "King Fusion M&M's",  color: '#502314', textColor: '#fff'    },
+  { imgSrc: 'images/onion-rings.png', label: '6 Onion Rings',      color: '#FFAA00', textColor: '#502314' },
+  { imgSrc: 'images/muffin.png',      label: 'Pâtisserie',         color: '#198737', textColor: '#fff'    },
 ];
 
 function clampStars(raw) {
@@ -129,13 +130,13 @@ test('le delta est toujours au moins 5 tours (effet visuel garanti)', () => {
 
 console.log('\n4. Cohérence du tableau PRIZES');
 
-test('exactement 4 prix (1 par quart de roue)', () => assert.strictEqual(PRIZES.length, 4));
+test('exactement 5 prix', () => assert.strictEqual(PRIZES.length, 5));
 test('chaque prix a les 4 champs requis', () => {
   PRIZES.forEach((p, i) => {
-    assert(p.emoji,    `PRIZES[${i}] manque emoji`);
+    assert(p.imgSrc,   `PRIZES[${i}] manque imgSrc`);
     assert(p.label,    `PRIZES[${i}] manque label`);
     assert(p.color,    `PRIZES[${i}] manque color`);
-    assert(p.textColor, `PRIZES[${i}] manque textColor`);
+    assert(p.textColor,`PRIZES[${i}] manque textColor`);
   });
 });
 test('les couleurs sont des codes hex valides (3 ou 6 chiffres)', () => {

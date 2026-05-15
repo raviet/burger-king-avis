@@ -8,25 +8,32 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="card">
-    <div class="logo">🍔</div>
-    <div class="brand">Burger King</div>
 
-    <div class="divider"></div>
-
-    <h1>Comment s'est passée votre visite ?</h1>
-    <p class="subtitle">Votre avis nous aide à nous améliorer</p>
-
-    <div class="stars" role="group" aria-label="Sélectionnez une note de 1 à 5 étoiles">
-      <span class="star" data-value="1" role="button" tabindex="0" aria-label="1 étoile">★</span>
-      <span class="star" data-value="2" role="button" tabindex="0" aria-label="2 étoiles">★</span>
-      <span class="star" data-value="3" role="button" tabindex="0" aria-label="3 étoiles">★</span>
-      <span class="star" data-value="4" role="button" tabindex="0" aria-label="4 étoiles">★</span>
-      <span class="star" data-value="5" role="button" tabindex="0" aria-label="5 étoiles">★</span>
+  <header class="bk-header">
+    <div class="bk-logo-wrap">
+      <span class="bk-emoji">🍔</span>
+      <span class="bk-wordmark">Burger King</span>
     </div>
+  </header>
 
-    <p class="stars-hint" id="stars-hint">Appuyez sur une étoile pour donner votre note</p>
-  </div>
+  <main class="bk-main">
+    <div class="card">
+      <h1>Comment s'est passée<br>votre visite ?</h1>
+      <p class="subtitle">Votre avis nous aide à nous améliorer</p>
+
+      <div class="stars" role="group" aria-label="Sélectionnez une note de 1 à 5 étoiles">
+        <span class="star" data-value="1" role="button" tabindex="0" aria-label="1 étoile">★</span>
+        <span class="star" data-value="2" role="button" tabindex="0" aria-label="2 étoiles">★</span>
+        <span class="star" data-value="3" role="button" tabindex="0" aria-label="3 étoiles">★</span>
+        <span class="star" data-value="4" role="button" tabindex="0" aria-label="4 étoiles">★</span>
+        <span class="star" data-value="5" role="button" tabindex="0" aria-label="5 étoiles">★</span>
+      </div>
+
+      <p class="stars-hint" id="stars-hint">Appuyez sur une étoile pour donner votre note</p>
+    </div>
+  </main>
+
+  <div class="bk-footer-strip"></div>
 
   <script src="script.js"></script>
 </body>

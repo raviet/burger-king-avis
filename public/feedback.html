@@ -8,57 +8,71 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="card">
-    <div class="logo">🍔</div>
-    <div class="brand">Burger King</div>
 
-    <div class="divider"></div>
-
-    <!-- Formulaire d'avis -->
-    <div id="form-section">
-      <h1>Nous sommes désolés</h1>
-      <p class="subtitle">Votre avis nous aide à nous améliorer. Dites-nous ce qui ne s'est pas bien passé.</p>
-
-      <div class="stars-display" id="stars-display"></div>
-      <p class="note-label" id="note-label"></p>
-
-      <form id="feedback-form" novalidate>
-        <textarea
-          id="message"
-          name="message"
-          placeholder="Décrivez votre expérience…"
-          required
-          maxlength="1000"
-          aria-label="Votre commentaire"
-        ></textarea>
-
-        <button type="submit" class="btn" id="submit-btn">Envoyer mon avis</button>
-      </form>
-
-      <p class="status" id="status-msg"></p>
+  <header class="bk-header">
+    <div class="bk-logo-wrap">
+      <span class="bk-emoji">🍔</span>
+      <span class="bk-wordmark">Burger King</span>
     </div>
+  </header>
 
-    <!-- Roulette (affichée après envoi) -->
-    <div id="roulette-section" class="roulette-section" style="display:none">
-      <div class="check">✅</div>
-      <h2>Merci pour votre retour !</h2>
-      <p class="subtitle">Votre avis a bien été transmis. En guise de remerciement, tentez votre chance !</p>
+  <main class="bk-main">
+    <div class="card">
 
-      <div class="wheel-wrapper">
-        <div class="wheel-pointer"></div>
-        <canvas id="wheel" width="260" height="260"></canvas>
+      <!-- Formulaire d'avis -->
+      <div id="form-section">
+        <h1>Nous sommes<br>désolés…</h1>
+        <p class="subtitle">Votre avis nous aide à nous améliorer.<br>Dites-nous ce qui ne s'est pas bien passé.</p>
+
+        <div class="stars-display-row">
+          <span class="stars-display" id="stars-display"></span>
+          <span class="note-label"    id="note-label"></span>
+        </div>
+
+        <form id="feedback-form" novalidate>
+          <textarea
+            id="message"
+            name="message"
+            placeholder="Décrivez votre expérience…"
+            required
+            maxlength="1000"
+            aria-label="Votre commentaire"
+          ></textarea>
+          <button type="submit" class="btn" id="submit-btn">Envoyer mon avis</button>
+        </form>
+
+        <p class="status" id="status-msg"></p>
       </div>
 
-      <button class="btn spin-btn" id="spin-btn">🎰 Tourner la roulette !</button>
+      <!-- Roulette (après envoi) -->
+      <div id="roulette-section" class="roulette-section" style="display:none">
 
-      <div class="prize-reveal" id="prize-reveal">
-        <div class="prize-emoji" id="prize-emoji"></div>
-        <p class="prize-won-label">Vous avez gagné :</p>
-        <p class="prize-name" id="prize-name"></p>
-        <p class="prize-instruction">Montrez cet écran à la caisse<br>pour récupérer votre cadeau !</p>
+        <div class="check-wrap">
+          <span class="check">✅</span>
+          <h2>Merci !</h2>
+        </div>
+
+        <p class="subtitle">Avis transmis. Tentez votre chance !</p>
+
+        <div class="wheel-wrapper">
+          <div class="wheel-pointer"></div>
+          <canvas id="wheel" width="270" height="270"></canvas>
+        </div>
+
+        <button class="btn spin-btn" id="spin-btn">🎰 Tourner la roulette !</button>
+
+        <div class="prize-reveal" id="prize-reveal">
+          <div class="prize-emoji" id="prize-emoji"></div>
+          <p class="prize-won-label">Vous avez gagné</p>
+          <p class="prize-name"     id="prize-name"></p>
+          <p class="prize-instruction">Montrez cet écran à la caisse<br>pour récupérer votre cadeau !</p>
+        </div>
+
       </div>
     </div>
-  </div>
+  </main>
+
+  <div class="bk-footer-strip"></div>
 
   <script src="feedback.js"></script>
 </body>

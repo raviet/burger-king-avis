@@ -60,19 +60,25 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
 
 // ─── Roulette ────────────────────────────────────────────────────────────────
 
-// Les 4 cadeaux : modifier label/emoji pour changer les produits offerts.
-// Toujours garder exactement 4 entrées (roue divisée en 4 quarts de 90°).
 const PRIZES = [
-  { emoji: '🍗', label: '4 Nuggets',     color: '#D62300', textColor: '#fff' },
-  { emoji: '🍔', label: 'Cheeseburger',  color: '#F5A623', textColor: '#1A1A1A' },
-  { emoji: '🍦', label: 'Sundae',        color: '#1A1A1A', textColor: '#fff' },
-  { emoji: '🧅', label: '6 Onion Rings', color: '#502314', textColor: '#fff' },
+  { label: '4 Nuggets',          imgSrc: 'images/nuggets.png',     color: '#D62300', textColor: '#fff'     },
+  { label: 'Cheeseburger',       imgSrc: 'images/cheeseburger.png',color: '#FF8732', textColor: '#fff'     },
+  { label: 'King Fusion M&M\'s', imgSrc: 'images/king-fusion.png', color: '#502314', textColor: '#fff'     },
+  { label: '6 Onion Rings',      imgSrc: 'images/onion-rings.png', color: '#FFAA00', textColor: '#502314'  },
+  { label: 'Pâtisserie',         imgSrc: 'images/muffin.png',      color: '#198737', textColor: '#fff'     },
 ];
+
+// Préchargement des images
+PRIZES.forEach(p => {
+  p.img = new Image();
+  p.img.onload = () => drawWheel(currentAngle);
+  p.img.src = p.imgSrc;
+});
 
 const wheelCanvas = document.getElementById('wheel');
 const spinBtn     = document.getElementById('spin-btn');
-// -3π/4 centre le segment 0 exactement sous le pointeur au départ
-let currentAngle  = -Math.PI * 3 / 4;
+// -7π/10 centre le segment 0 sous le pointeur (5 segments × 72°)
+let currentAngle  = -Math.PI * 7 / 10;
 let isSpinning    = false;
 
 function drawWheel(angle) {
@@ -103,13 +109,17 @@ function drawWheel(angle) {
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Emoji positionné à 58% du rayon le long de l'axe central du segment
-    const ex = cx + Math.cos(mid) * R * 0.58;
-    const ey = cy + Math.sin(mid) * R * 0.58;
-    ctx.font = '30px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(PRIZES[i].emoji, ex, ey);
+    // Image centrée à 58% du rayon, taille = 56% du diamètre du segment
+    const ex  = cx + Math.cos(mid) * R * 0.58;
+    const ey  = cy + Math.sin(mid) * R * 0.58;
+    const img = PRIZES[i].img;
+    if (img && img.complete && img.naturalWidth) {
+      const size = R * 0.56;
+      const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight);
+      const dw = img.naturalWidth * scale;
+      const dh = img.naturalHeight * scale;
+      ctx.drawImage(img, ex - dw / 2, ey - dh / 2, dw, dh);
+    }
   }
 
   // Anneau extérieur rouge BK
