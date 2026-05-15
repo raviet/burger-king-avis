@@ -38,11 +38,25 @@
       <p class="status" id="status-msg"></p>
     </div>
 
-    <!-- Message de remerciement (affiché après envoi) -->
-    <div class="thank-you" id="thank-you">
+    <!-- Roulette (affichée après envoi) -->
+    <div id="roulette-section" class="roulette-section" style="display:none">
       <div class="check">✅</div>
       <h2>Merci pour votre retour !</h2>
-      <p>Votre avis a bien été transmis à notre équipe.<br>Nous ferons de notre mieux pour nous améliorer.</p>
+      <p class="subtitle">Votre avis a bien été transmis. En guise de remerciement, tentez votre chance !</p>
+
+      <div class="wheel-wrapper">
+        <div class="wheel-pointer"></div>
+        <canvas id="wheel" width="260" height="260"></canvas>
+      </div>
+
+      <button class="btn spin-btn" id="spin-btn">🎰 Tourner la roulette !</button>
+
+      <div class="prize-reveal" id="prize-reveal">
+        <div class="prize-emoji" id="prize-emoji"></div>
+        <p class="prize-won-label">Vous avez gagné :</p>
+        <p class="prize-name" id="prize-name"></p>
+        <p class="prize-instruction">Montrez cet écran à la caisse<br>pour récupérer votre cadeau !</p>
+      </div>
     </div>
   </div>
 
