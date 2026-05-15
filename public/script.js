@@ -6,6 +6,7 @@ const GOOGLE_REVIEWS_URL = 'https://www.google.com/maps/place/Burger+King/@48.82
 const stars = document.querySelectorAll('.star');
 const hint  = document.getElementById('stars-hint');
 
+// Index 0 volontairement vide pour que labels[1..5] correspondent aux valeurs des étoiles
 const labels = ['', 'Très mauvais', 'Décevant', 'Correct', 'Bien', 'Excellent !'];
 
 stars.forEach(star => {
@@ -17,12 +18,13 @@ stars.forEach(star => {
   });
 
   star.addEventListener('mouseleave', () => {
-    highlight(0);
+    highlight(0); // 0 = aucune étoile colorée
     hint.textContent = 'Appuyez sur une étoile pour donner votre note';
   });
 
   star.addEventListener('click', () => choose(value));
 
+  // Accessibilité clavier : les étoiles sont des role="button"
   star.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -31,6 +33,7 @@ stars.forEach(star => {
   });
 });
 
+// Colorie toutes les étoiles jusqu'à upTo (effet de survol progressif)
 function highlight(upTo) {
   stars.forEach(s => {
     const v = parseInt(s.dataset.value, 10);
@@ -38,6 +41,7 @@ function highlight(upTo) {
   });
 }
 
+// Stratégie de filtrage : 5★ → avis public Google, 1-4★ → formulaire interne
 function choose(value) {
   if (value === 5) {
     window.location.href = GOOGLE_REVIEWS_URL;

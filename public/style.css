@@ -172,26 +172,100 @@ textarea:focus {
   font-weight: 600;
 }
 
-.thank-you {
-  display: none;
+/* Roulette */
+
+.roulette-section {
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  text-align: center;
 }
 
-.thank-you .check {
-  font-size: 64px;
+.roulette-section .check {
+  font-size: 48px;
+  line-height: 1;
 }
 
-.thank-you h2 {
+.roulette-section h2 {
   font-size: 20px;
   font-weight: 700;
   color: var(--bk-dark);
 }
 
-.thank-you p {
+.wheel-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wheel-pointer {
+  width: 0;
+  height: 0;
+  border-left: 13px solid transparent;
+  border-right: 13px solid transparent;
+  border-top: 22px solid var(--bk-red);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+  margin-bottom: -2px;
+  position: relative;
+  z-index: 1;
+}
+
+#wheel {
+  border-radius: 50%;
+  display: block;
+}
+
+.spin-btn {
+  max-width: 260px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(214, 35, 0, 0.3); }
+  50%       { box-shadow: 0 6px 24px rgba(214, 35, 0, 0.55); transform: translateY(-2px); }
+}
+
+.prize-reveal {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+}
+
+@keyframes prizeReveal {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.prize-emoji {
+  font-size: 64px;
+  line-height: 1;
+}
+
+.prize-won-label {
   font-size: 14px;
   color: #888;
+  margin: 0;
+}
+
+.prize-name {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--bk-red);
+  margin: 0;
+}
+
+.prize-instruction {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--bk-dark);
+  background: #fffbf0;
+  border: 2px dashed var(--bk-orange);
+  border-radius: 12px;
+  padding: 12px 20px;
+  line-height: 1.6;
 }
 
 .divider {
@@ -212,5 +286,10 @@ textarea:focus {
 
   h1 {
     font-size: 19px;
+  }
+
+  #wheel {
+    width: 220px;
+    height: 220px;
   }
 }
