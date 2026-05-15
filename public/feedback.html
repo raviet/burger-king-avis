@@ -11,8 +11,7 @@
 
   <header class="bk-header">
     <div class="bk-logo-wrap">
-      <span class="bk-emoji">🍔</span>
-      <span class="bk-wordmark">Burger King</span>
+      <img class="bk-logo" src="images/bk-logo.png" alt="Burger King" />
     </div>
   </header>
 
@@ -24,10 +23,14 @@
         <h1>Nous sommes<br>désolés…</h1>
         <p class="subtitle">Votre avis nous aide à nous améliorer.<br>Dites-nous ce qui ne s'est pas bien passé.</p>
 
-        <div class="stars-display-row">
-          <span class="stars-display" id="stars-display"></span>
-          <span class="note-label"    id="note-label"></span>
+        <div class="stars" id="feedback-stars" role="group" aria-label="Modifier votre note">
+          <span class="star" data-value="1" role="button" tabindex="0" aria-label="1 étoile"><img src="images/star.png" alt="★"/></span>
+          <span class="star" data-value="2" role="button" tabindex="0" aria-label="2 étoiles"><img src="images/star.png" alt="★"/></span>
+          <span class="star" data-value="3" role="button" tabindex="0" aria-label="3 étoiles"><img src="images/star.png" alt="★"/></span>
+          <span class="star" data-value="4" role="button" tabindex="0" aria-label="4 étoiles"><img src="images/star.png" alt="★"/></span>
+          <span class="star" data-value="5" role="button" tabindex="0" aria-label="5 étoiles"><img src="images/star.png" alt="★"/></span>
         </div>
+        <p class="stars-hint" id="feedback-stars-hint"></p>
 
         <form id="feedback-form" novalidate>
           <textarea
@@ -48,20 +51,24 @@
       <div id="roulette-section" class="roulette-section" style="display:none">
 
         <div class="check-wrap">
-          <span class="check">✅</span>
+          <img class="check" src="images/check.png" alt="✓" />
           <h2>Merci !</h2>
         </div>
 
         <p class="subtitle">Avis transmis. Tentez votre chance !</p>
 
         <div class="wheel-wrapper">
-          <div class="wheel-pointer"></div>
+          <svg class="wheel-pointer" viewBox="0 0 28 38" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 38 C14 38 1 23 1 14 A13 13 0 1 1 27 14 C27 23 14 38 14 38Z" fill="#D62300"/>
+            <circle cx="14" cy="13" r="5" fill="rgba(255,255,255,0.35)"/>
+          </svg>
           <canvas id="wheel" width="270" height="270"></canvas>
         </div>
 
-        <button class="btn spin-btn" id="spin-btn">🎰 Tourner la roulette !</button>
+        <button class="btn spin-btn" id="spin-btn">Tourner la roulette !</button>
 
         <div class="prize-reveal" id="prize-reveal">
+          <div class="confetti-container" id="confetti-container"></div>
           <div class="prize-emoji" id="prize-emoji"></div>
           <p class="prize-won-label">Vous avez gagné</p>
           <p class="prize-name"     id="prize-name"></p>

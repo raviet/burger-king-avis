@@ -3,13 +3,51 @@
 const WEB3FORMS_KEY = '39c512ae-ad7f-4a07-8b89-474adc23c163';
 
 const params     = new URLSearchParams(window.location.search);
-// Clamp défensif : les 5★ ne passent jamais par cette page, mais on se prémunit
-// contre une URL malformée (?stars=0, ?stars=99, ?stars=abc…)
 const stars      = Math.max(1, Math.min(4, parseInt(params.get('stars'), 10) || 1));
-const starLabels = ['', 'Très mauvais', 'Décevant', 'Correct', 'Bien'];
+const starLabels = ['', 'Très mauvais', 'Décevant', 'Correct', 'Bien', 'Excellent !'];
 
-document.getElementById('stars-display').textContent = '★'.repeat(stars) + '☆'.repeat(5 - stars);
-document.getElementById('note-label').textContent    = stars + '/5 – ' + starLabels[stars];
+let selectedStars = stars;
+
+const feedbackStars = document.querySelectorAll('#feedback-stars .star');
+const feedbackHint  = document.getElementById('feedback-stars-hint');
+
+function highlightFeedbackStars(upTo) {
+  feedbackStars.forEach(s => {
+    s.classList.toggle('hovered', parseInt(s.dataset.value) <= upTo);
+  });
+}
+
+function selectFeedbackStars(value) {
+  selectedStars = value;
+  highlightFeedbackStars(value);
+  feedbackHint.textContent = value + '/5 – ' + starLabels[value];
+}
+
+feedbackStars.forEach(star => {
+  const value = parseInt(star.dataset.value);
+  star.addEventListener('mouseenter', () => {
+    highlightFeedbackStars(value);
+    feedbackHint.textContent = value + '/5 – ' + starLabels[value];
+  });
+  star.addEventListener('mouseleave', () => {
+    highlightFeedbackStars(selectedStars);
+    feedbackHint.textContent = selectedStars + '/5 – ' + starLabels[selectedStars];
+  });
+  star.addEventListener('click', () => selectFeedbackStars(value));
+  star.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectFeedbackStars(value); }
+  });
+});
+
+selectFeedbackStars(stars);
+
+const DEBUG = new URLSearchParams(window.location.search).has('debug');
+
+if (DEBUG) {
+  document.getElementById('form-section').style.display     = 'none';
+  document.getElementById('roulette-section').style.display = 'flex';
+  drawWheel(currentAngle);
+}
 
 document.getElementById('feedback-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -35,8 +73,8 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({
         access_key: WEB3FORMS_KEY,
-        subject:    `Avis client BK – ${stars}/5`,
-        stars:      stars + '/5',
+        subject:    `Avis client BK – ${selectedStars}/5`,
+        stars:      selectedStars + '/5',
         message:    message,
         date:       new Date().toLocaleString('fr-FR'),
       }),
@@ -45,7 +83,6 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
     const data = await res.json();
     if (!data.success) throw new Error(data.message);
 
-    // Formulaire masqué, roulette affichée – on dessine l'état initial avant le spin
     document.getElementById('form-section').style.display       = 'none';
     document.getElementById('roulette-section').style.display   = 'flex';
     drawWheel(currentAngle);
@@ -75,6 +112,10 @@ PRIZES.forEach(p => {
   p.img.src = p.imgSrc;
 });
 
+const bkLogoImg = new Image();
+bkLogoImg.onload = () => drawWheel(currentAngle);
+bkLogoImg.src = 'images/bk-logo.png';
+
 const wheelCanvas = document.getElementById('wheel');
 const spinBtn     = document.getElementById('spin-btn');
 // -7π/10 centre le segment 0 sous le pointeur (5 segments × 72°)
@@ -87,62 +128,90 @@ function drawWheel(angle) {
   const H     = wheelCanvas.height;
   const cx    = W / 2;
   const cy    = H / 2;
-  const R     = cx - 6; // rayon : laisse 6px de marge pour le contour
+  const R     = cx - 12;
   const N     = PRIZES.length;
-  const slice = (2 * Math.PI) / N; // 90° par segment
+  const slice = (2 * Math.PI) / N;
 
   ctx.clearRect(0, 0, W, H);
 
+  // Anneau extérieur décoratif BK
+  ctx.beginPath();
+  ctx.arc(cx, cy, R + 10, 0, 2 * Math.PI);
+  ctx.fillStyle = '#D62300';
+  ctx.fill();
+
+  // Segments
   for (let i = 0; i < N; i++) {
     const start = angle + i * slice;
     const end   = start + slice;
-    const mid   = start + slice / 2; // angle du centre du segment
+    const mid   = start + slice / 2;
 
-    // Secteur coloré
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.arc(cx, cy, R, start, end);
     ctx.closePath();
     ctx.fillStyle = PRIZES[i].color;
     ctx.fill();
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(255,255,255,.55)';
+    ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Image centrée à 58% du rayon, taille = 56% du diamètre du segment
-    const ex  = cx + Math.cos(mid) * R * 0.58;
-    const ey  = cy + Math.sin(mid) * R * 0.58;
+    const ex  = cx + Math.cos(mid) * R * 0.60;
+    const ey  = cy + Math.sin(mid) * R * 0.60;
     const img = PRIZES[i].img;
     if (img && img.complete && img.naturalWidth) {
-      const size = R * 0.56;
+      const size  = R * 0.52;
       const scale = Math.min(size / img.naturalWidth, size / img.naturalHeight);
-      const dw = img.naturalWidth * scale;
-      const dh = img.naturalHeight * scale;
+      const dw    = img.naturalWidth  * scale;
+      const dh    = img.naturalHeight * scale;
       ctx.drawImage(img, ex - dw / 2, ey - dh / 2, dw, dh);
     }
   }
 
-  // Anneau extérieur rouge BK
+  // Gloss : reflet lumineux en haut du disque
+  const gloss = ctx.createRadialGradient(cx, cy - R * .28, 0, cx, cy, R);
+  gloss.addColorStop(0,   'rgba(255,255,255,.18)');
+  gloss.addColorStop(.55, 'rgba(255,255,255,0)');
+  gloss.addColorStop(1,   'rgba(0,0,0,.08)');
   ctx.beginPath();
   ctx.arc(cx, cy, R, 0, 2 * Math.PI);
-  ctx.strokeStyle = '#D62300';
-  ctx.lineWidth = 5;
+  ctx.fillStyle = gloss;
+  ctx.fill();
+
+  // Bordure intérieure de l'anneau
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(255,255,255,.8)';
+  ctx.lineWidth = 2.5;
   ctx.stroke();
 
-  // Pastille centrale décorative
+  // Points décoratifs aux jonctions de segments (sur l'anneau BK)
+  for (let i = 0; i < N; i++) {
+    const a  = angle + i * slice;
+    const dx = cx + Math.cos(a) * (R + 5);
+    const dy = cy + Math.sin(a) * (R + 5);
+    ctx.beginPath();
+    ctx.arc(dx, dy, 3.5, 0, 2 * Math.PI);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+
+  // Hub central : cercle blanc + logo BK clipé
+  const hubR = 32;
+  ctx.save();
   ctx.beginPath();
-  ctx.arc(cx, cy, 22, 0, 2 * Math.PI);
+  ctx.arc(cx, cy, hubR, 0, 2 * Math.PI);
   ctx.fillStyle = '#fff';
   ctx.fill();
-  ctx.strokeStyle = '#D62300';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-
-  ctx.font = 'bold 12px Segoe UI, Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#D62300';
-  ctx.fillText('BK', cx, cy);
+  ctx.clip();
+  if (bkLogoImg && bkLogoImg.complete && bkLogoImg.naturalWidth) {
+    const maxS = hubR * 1.4;
+    const ratio = bkLogoImg.naturalWidth / bkLogoImg.naturalHeight;
+    const dw = ratio >= 1 ? maxS : maxS * ratio;
+    const dh = ratio >= 1 ? maxS / ratio : maxS;
+    ctx.drawImage(bkLogoImg, cx - dw / 2, cy - dh / 2, dw, dh);
+  }
+  ctx.restore();
 }
 
 // Décélération quartique : démarre vite, ralentit fortement en fin de course
@@ -191,13 +260,60 @@ function spin() {
   requestAnimationFrame(animate);
 }
 
+function darkenHex(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r   = Math.max(0, (num >> 16)       - amount);
+  const g   = Math.max(0, (num >> 8 & 0xff) - amount);
+  const b   = Math.max(0, (num & 0xff)      - amount);
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
 function showPrize(winner) {
-  document.getElementById('prize-emoji').textContent = PRIZES[winner].emoji;
-  document.getElementById('prize-name').textContent  = PRIZES[winner].label;
+  const prize   = PRIZES[winner];
+  const isLight = prize.textColor !== '#fff';
+
+  document.getElementById('prize-emoji').innerHTML = `<img src="${prize.imgSrc}" alt="${prize.label}">`;
+  document.getElementById('prize-name').textContent = prize.label;
+
+  document.querySelector('.wheel-wrapper').style.display = 'none';
+
   const el = document.getElementById('prize-reveal');
+  el.style.background = `linear-gradient(145deg, ${prize.color} 0%, ${darkenHex(prize.color, 55)} 100%)`;
+  el.style.boxShadow  = `0 8px 32px ${prize.color}66, 0 2px 8px rgba(0,0,0,.15)`;
+
+  el.querySelector('.prize-won-label').style.color      = isLight ? 'rgba(80,35,20,.7)'   : 'rgba(255,255,255,.75)';
+  el.querySelector('.prize-name').style.color           = isLight ? '#502314'              : '#FFAA00';
+  el.querySelector('.prize-instruction').style.color      = isLight ? 'rgba(80,35,20,.85)'  : 'rgba(255,255,255,.92)';
+  el.querySelector('.prize-instruction').style.background = isLight ? 'rgba(0,0,0,.08)'     : 'rgba(255,255,255,.15)';
+
   el.style.display   = 'flex';
-  // Rejoue l'animation à chaque appel (reset nécessaire avant de réassigner)
-  el.style.animation = 'prizeReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+  el.style.animation = 'none';
+  requestAnimationFrame(() => {
+    el.style.animation = 'prizeReveal 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards';
+  });
+  launchConfetti();
+}
+
+function launchConfetti() {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const colors = ['#FFAA00', '#FF8732', '#fff', '#FFCC00', '#ffd966'];
+  for (let i = 0; i < 38; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-particle';
+    const size = 4 + Math.random() * 6;
+    el.style.cssText = [
+      `left:${10 + Math.random() * 80}%`,
+      `background:${colors[Math.floor(Math.random() * colors.length)]}`,
+      `width:${size}px`,
+      `height:${size * (Math.random() > .5 ? 1 : 2.5)}px`,
+      `border-radius:${Math.random() > .5 ? '50%' : '2px'}`,
+      `animation-delay:${(Math.random() * .5).toFixed(2)}s`,
+      `animation-duration:${(.9 + Math.random() * .7).toFixed(2)}s`,
+    ].join(';');
+    container.appendChild(el);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 2200);
 }
 
 spinBtn.addEventListener('click', spin);

@@ -59,7 +59,7 @@ console.log('\n1. Clamp de la note (paramètre ?stars=)');
 test('valeur normale : 3 reste 3', () => assert.strictEqual(clampStars('3'), 3));
 test('valeur normale : 1 reste 1', () => assert.strictEqual(clampStars('1'), 1));
 test('valeur normale : 4 reste 4', () => assert.strictEqual(clampStars('4'), 4));
-test('5 est ramené à 4 (les 5★ ne passent pas par ce formulaire)', () => assert.strictEqual(clampStars('5'), 4));
+test('5 est ramené à 4 (valeur URL initiale : les 5★ arrivent depuis Google redirect)', () => assert.strictEqual(clampStars('5'), 4));
 test('0 est ramené à 1', () => assert.strictEqual(clampStars('0'), 1));
 test('-1 est ramené à 1', () => assert.strictEqual(clampStars('-1'), 1));
 test('valeur non numérique ("abc") → défaut 1', () => assert.strictEqual(clampStars('abc'), 1));
@@ -171,6 +171,114 @@ test('2 étoiles → feedback.html?stars=2', () =>
   assert.strictEqual(choose(2, GOOGLE_URL), 'feedback.html?stars=2'));
 test('1 étoile  → feedback.html?stars=1', () =>
   assert.strictEqual(choose(1, GOOGLE_URL), 'feedback.html?stars=1'));
+
+// ─── 6. darkenHex ────────────────────────────────────────────────────────────
+
+function darkenHex(hex, amount) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r   = Math.max(0, (num >> 16)       - amount);
+  const g   = Math.max(0, (num >> 8 & 0xff) - amount);
+  const b   = Math.max(0, (num & 0xff)      - amount);
+  return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
+
+console.log('\n6. darkenHex (teinte de fond prize reveal)');
+
+test('amount=0 → couleur inchangée',          () => assert.strictEqual(darkenHex('#D62300', 0), '#d62300'));
+test('assombrit correctement #FF8732 de 55',  () => {
+  const r = assert.doesNotThrow(() => darkenHex('#FF8732', 55));
+  const result = darkenHex('#FF8732', 55);
+  assert.match(result, /^#[0-9a-f]{6}$/, `hex invalide : ${result}`);
+});
+test('clamp à 0 : canal qui passerait négatif reste 0', () => {
+  const result = darkenHex('#050500', 10);
+  assert.match(result, /^#[0-9a-f]{6}$/);
+  const num = parseInt(result.slice(1), 16);
+  assert((num >> 16) === 0,       'R devrait être 0');
+  assert(((num >> 8) & 0xff) === 0, 'G devrait être 0');
+});
+test('#000000 assombri reste #000000', () => assert.strictEqual(darkenHex('#000000', 99), '#000000'));
+test('résultat toujours un hex 6 chiffres valide', () => {
+  const hex6 = /^#[0-9a-f]{6}$/;
+  ['#D62300','#FF8732','#502314','#FFAA00','#198737'].forEach(c => {
+    assert.match(darkenHex(c, 55), hex6, `darkenHex(${c}) invalide`);
+  });
+});
+
+// ─── 7. Logique isLight (couleur texte prize reveal) ──────────────────────────
+
+console.log('\n7. Détection fond clair (isLight) pour prize reveal');
+
+function isLight(textColor) { return textColor !== '#fff'; }
+
+test('exactement 1 prix a un fond clair (onion rings jaune)', () =>
+  assert.strictEqual(PRIZES.filter(p => isLight(p.textColor)).length, 1));
+test('le prix fond clair est "6 Onion Rings"', () =>
+  assert.strictEqual(PRIZES.find(p => isLight(p.textColor)).label, '6 Onion Rings'));
+test('les 4 autres ont textColor blanc', () =>
+  assert.strictEqual(PRIZES.filter(p => !isLight(p.textColor)).length, 4));
+
+// ─── 8. Génération HTML des étoiles ──────────────────────────────────────────
+
+console.log('\n8. Génération HTML étoiles (filled / empty)');
+
+function buildStarsHTML(stars) {
+  return '<img class="star-img filled">'.repeat(stars) +
+         '<img class="star-img empty">'.repeat(5 - stars);
+}
+const countFilled = html => (html.match(/filled/g) || []).length;
+const countEmpty  = html => (html.match(/empty/g)  || []).length;
+
+[1, 2, 3, 4, 5].forEach(n => {
+  test(`stars=${n} → ${n} filled + ${5 - n} empty`, () => {
+    const html = buildStarsHTML(n);
+    assert.strictEqual(countFilled(html), n,     `filled attendu ${n}`);
+    assert.strictEqual(countEmpty(html),  5 - n, `empty attendu ${5 - n}`);
+  });
+});
+test('total toujours 5 étoiles', () => {
+  [1,2,3,4,5].forEach(n => {
+    const html = buildStarsHTML(n);
+    assert.strictEqual(countFilled(html) + countEmpty(html), 5);
+  });
+});
+
+// ─── 9. Cohérence avancée PRIZES ─────────────────────────────────────────────
+
+console.log('\n9. Cohérence avancée du tableau PRIZES');
+
+test('labels tous uniques', () => {
+  const labels = PRIZES.map(p => p.label);
+  assert.strictEqual(new Set(labels).size, labels.length, 'labels dupliqués');
+});
+test('couleurs de segments toutes uniques', () => {
+  const colors = PRIZES.map(p => p.color);
+  assert.strictEqual(new Set(colors).size, colors.length, 'couleurs dupliquées');
+});
+test('imgSrc se terminent tous par .png', () => {
+  PRIZES.forEach((p, i) =>
+    assert(p.imgSrc.endsWith('.png'), `PRIZES[${i}].imgSrc ne finit pas par .png`));
+});
+test('imgSrc commencent tous par "images/"', () => {
+  PRIZES.forEach((p, i) =>
+    assert(p.imgSrc.startsWith('images/'), `PRIZES[${i}].imgSrc chemin invalide`));
+});
+
+// ─── 10. easeOut : décélération réelle ───────────────────────────────────────
+
+console.log('\n10. easeOut : décélération (vitesse décroissante)');
+
+test('vitesse décroissante : incrément plus petit à chaque pas', () => {
+  const steps = [0, 0.2, 0.4, 0.6, 0.8, 1.0];
+  const diffs = [];
+  for (let i = 1; i < steps.length; i++)
+    diffs.push(easeOut(steps[i]) - easeOut(steps[i - 1]));
+  for (let i = 1; i < diffs.length; i++)
+    assert(diffs[i] < diffs[i - 1],
+      `Pas ${i}: diff=${diffs[i].toFixed(4)} devrait être < ${diffs[i-1].toFixed(4)}`);
+});
+test('easeOut(0.25) > 0.5 : première moitié du temps > moitié du chemin', () =>
+  assert(easeOut(0.25) > 0.5, `easeOut(0.25)=${easeOut(0.25).toFixed(3)}`));
 
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 
