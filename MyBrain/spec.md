@@ -34,12 +34,13 @@ QR Code → index.html (étoiles 1-5)
 - **Frontend** : HTML / CSS / JS vanilla (pas de framework)
 - **Hébergement** : Firebase Hosting (plan Spark, gratuit)
 - **Email** : Web3Forms (gratuit, 250 soumissions/mois)
-- **Base de données** : Firestore (`config/settings { roulette_enabled: bool }`)
+- **Base de données** : Firestore (`config/settings { roulette_enabled, email_enabled }`)
 - **Auth** : Firebase Auth Email/Password (compte admin uniquement)
 - **Firebase project** : `burger-king-avis` | App ID : `1:756976293842:web:0c9cb6d0094c4cda545a0b`
 - **Repo** : `~/Projet/burger-king-avis` → `github.com/raviet/burger-king-avis`
 - **URL live** : https://burger-king-avis.web.app
 - **Admin** : https://burger-king-avis.web.app/admin
+- **Environnements** : `build.sh [dev|prod]` → copie `config/$ENV.js` → `public/config.js`
 
 ### Structure repo
 
@@ -55,7 +56,11 @@ burger-king-avis/
 │   ├── admin.js           — Firebase Auth + Firestore config toggle
 │   ├── style.css          — design BK charte 2023, responsive mobile
 │   └── images/            — photos produits BK (nuggets, cheeseburger, onion-rings, king-fusion, muffin)
-├── tests/test.js          ← 50 tests unitaires Node.js (sans dépendance)
+├── config/
+│   ├── dev.js             — ENV=dev, clé Web3Forms test, URL Google=#, Firestore=config-dev
+│   └── prod.js            — ENV=prod, clés réelles, Firestore=config
+├── build.sh               ← copie config/$ENV.js → public/config.js (jamais commité)
+├── tests/test.js          ← 92 tests unitaires Node.js (sans dépendance)
 ├── hooks/post-commit      ← génère BurgerKingAvisGit.md dans vault
 ├── firestore.rules        ← règles Firestore (read public, write auth)
 ├── firebase.json          ← hosting (cleanUrls: true) + firestore
@@ -82,8 +87,10 @@ burger-king-avis/
 
 ```
 /admin → login Firebase Auth (Email/Password)
-  └── Dashboard : toggle roulette_enabled
-        └── onSnapshot Firestore config/settings → UI en temps réel
+  └── Dashboard :
+        ├── toggle roulette_enabled  → Firestore config/settings (ou config-dev/settings en dev)
+        └── toggle email_enabled     → Firestore config/settings
+              └── onSnapshot → UI en temps réel
 ```
 
 ### Design system (BK charte 2023)
@@ -101,8 +108,9 @@ burger-king-avis/
 
 ### Configuration
 
-- `script.js` ligne 2 : URL Google Avis (configurée ✅)
-- `feedback.js` ligne 1 : clé Web3Forms (configurée ✅)
+- `config/dev.js` : ENV=dev, WEB3FORMS_KEY=test, GOOGLE_REVIEWS_URL=#, FIRESTORE_COLLECTION=config-dev
+- `config/prod.js` : ENV=prod, WEB3FORMS_KEY=prod, GOOGLE_REVIEWS_URL=URL réelle, FIRESTORE_COLLECTION=config
+- `bash build.sh [dev|prod]` → génère `public/config.js` (dans .gitignore)
 
 ## Liens utiles
 
@@ -112,6 +120,6 @@ burger-king-avis/
 
 ## À venir
 
-- Finaliser login admin (reset password Firebase en cours)
-- Firestore pour stocker les avis en base (complément email — différent du config Firestore)
 - QR code à générer et imprimer en restaurant
+- Firestore pour stocker les avis en base (collection `avis`)
+- Dashboard : compteurs (avis total, par étoile, produits gagnés, analyse roulette)

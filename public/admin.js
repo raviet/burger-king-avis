@@ -9,7 +9,9 @@ firebase.initializeApp({
 
 const auth = firebase.auth();
 const db   = firebase.firestore();
-const CONFIG_REF = db.collection('config').doc('settings');
+const CONFIG_COL = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
+const CONFIG_DOC = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
+const CONFIG_REF = db.collection(CONFIG_COL).doc(CONFIG_DOC);
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
@@ -72,33 +74,62 @@ function showDashboard(user) {
   document.getElementById('user-info').textContent = user.email;
 
   unsubscribe = CONFIG_REF.onSnapshot(doc => {
-    const enabled = doc.exists ? doc.data().roulette_enabled !== false : true;
-    const toggle  = document.getElementById('roulette-toggle');
-    toggle.checked = enabled;
-    updateToggleUI(enabled);
+    const data = doc.exists ? doc.data() : {};
+
+    const roulette = data.roulette_enabled !== false;
+    const rouletteToggle = document.getElementById('roulette-toggle');
+    rouletteToggle.checked = roulette;
+    updateRouletteUI(roulette);
+
+    const email = data.email_enabled !== false;
+    const emailToggle = document.getElementById('email-toggle');
+    emailToggle.checked = email;
+    updateEmailUI(email);
   }, () => {
     document.getElementById('toggle-sub').textContent = 'Erreur de lecture';
+    document.getElementById('email-toggle-sub').textContent = 'Erreur de lecture';
   });
 
-  document.getElementById('roulette-toggle').addEventListener('change', async e => {
-    const enabled = e.target.checked;
-    updateToggleUI(enabled);
-    try {
-      await CONFIG_REF.set({ roulette_enabled: enabled }, { merge: true });
-      setStatusLine('Sauvegardé ✓', 2000);
-    } catch (err) {
-      setStatusLine('Erreur de sauvegarde', 3000);
-      e.target.checked = !enabled;
-      updateToggleUI(!enabled);
-    }
-  });
 }
 
-function updateToggleUI(enabled) {
+document.getElementById('roulette-toggle').addEventListener('change', async e => {
+  const enabled = e.target.checked;
+  updateRouletteUI(enabled);
+  try {
+    await CONFIG_REF.set({ roulette_enabled: enabled }, { merge: true });
+    setStatusLine('Sauvegardé ✓', 2000);
+  } catch (err) {
+    setStatusLine('Erreur de sauvegarde', 3000);
+    e.target.checked = !enabled;
+    updateRouletteUI(!enabled);
+  }
+});
+
+document.getElementById('email-toggle').addEventListener('change', async e => {
+  const enabled = e.target.checked;
+  updateEmailUI(enabled);
+  try {
+    await CONFIG_REF.set({ email_enabled: enabled }, { merge: true });
+    setStatusLine('Sauvegardé ✓', 2000);
+  } catch (err) {
+    setStatusLine('Erreur de sauvegarde', 3000);
+    e.target.checked = !enabled;
+    updateEmailUI(!enabled);
+  }
+});
+
+function updateRouletteUI(enabled) {
   const sub = document.getElementById('toggle-sub');
   sub.innerHTML = enabled
     ? '<span class="status-dot status-on"></span>Activée – clients reçoivent la roulette'
     : '<span class="status-dot status-off"></span>Désactivée – message de remerciement simple';
+}
+
+function updateEmailUI(enabled) {
+  const sub = document.getElementById('email-toggle-sub');
+  sub.innerHTML = enabled
+    ? '<span class="status-dot status-on"></span>Activé – avis reçus par email'
+    : '<span class="status-dot status-off"></span>Désactivé – aucun email envoyé';
 }
 
 let statusTimer = null;

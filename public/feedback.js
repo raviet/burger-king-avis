@@ -1,6 +1,4 @@
-// Clé publique Web3Forms – sans risque d'exposition car elle ne donne accès
-// qu'à l'envoi d'emails vers l'adresse liée au compte, pas à la facturation.
-const WEB3FORMS_KEY = '39c512ae-ad7f-4a07-8b89-474adc23c163';
+const WEB3FORMS_KEY = (typeof CONFIG !== 'undefined') ? CONFIG.WEB3FORMS_KEY : '';
 
 firebase.initializeApp({
   apiKey:            'AIzaSyBcHaY5Zdy6pLqq1PxYcMSMr-NqCOCvhj4',
@@ -13,8 +11,17 @@ firebase.initializeApp({
 const db = firebase.firestore();
 
 let rouletteEnabled = true;
-const configPromise = db.collection('config').doc('settings').get()
-  .then(doc => { if (doc.exists) rouletteEnabled = doc.data().roulette_enabled !== false; })
+let emailEnabled = true;
+const CONFIG_COL = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
+const CONFIG_DOC = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
+const configPromise = db.collection(CONFIG_COL).doc(CONFIG_DOC).get()
+  .then(doc => {
+    if (doc.exists) {
+      const data = doc.data();
+      rouletteEnabled = data.roulette_enabled !== false;
+      emailEnabled    = data.email_enabled    !== false;
+    }
+  })
   .catch(() => {});
 
 const params     = new URLSearchParams(window.location.search);
@@ -83,22 +90,23 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
   statusEl.className    = 'status';
 
   try {
-    const res = await fetch('https://api.web3forms.com/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        access_key: WEB3FORMS_KEY,
-        subject:    `Avis client BK – ${selectedStars}/5`,
-        stars:      selectedStars + '/5',
-        message:    message,
-        date:       new Date().toLocaleString('fr-FR'),
-      }),
-    });
-
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message);
-
     await configPromise;
+
+    if (emailEnabled) {
+      const res = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_KEY,
+          subject:    `Avis client BK – ${selectedStars}/5`,
+          stars:      selectedStars + '/5',
+          message:    message,
+          date:       new Date().toLocaleString('fr-FR'),
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+    }
     document.getElementById('form-section').style.display = 'none';
     if (rouletteEnabled) {
       document.getElementById('roulette-section').style.display = 'flex';

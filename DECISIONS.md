@@ -14,9 +14,14 @@ QR code → index.html (notation 1-5 étoiles)
               ├── 5 étoiles → redirection Google Reviews (avis public)
               └── 1-4 étoiles → feedback.html (formulaire interne)
                                     ↓
-                               email au gérant via Web3Forms
+                               email au gérant via Web3Forms (si email_enabled)
                                     ↓
-                               roulette cadeau (produit offert aléatoire)
+                               roulette cadeau (si roulette_enabled)
+                               ou merci simple (si désactivée)
+
+admin.html → Firebase Auth → dashboard admin
+                                 ├── toggle roulette → Firestore config
+                                 └── toggle email → Firestore config
 ```
 
 ---
@@ -73,19 +78,20 @@ QR code → index.html (notation 1-5 étoiles)
 
 **Implémentation :**
 - Roue dessinée en **Canvas API** (pas de librairie externe)
-- 4 segments aux couleurs officielles Burger King
+- 5 segments aux couleurs officielles Burger King
 - Rotation avec easing `1 - (1-t)^4` pour un ralentissement réaliste
 - 5 à 8 tours aléatoires avant l'arrêt pour l'effet de suspense
 - Le segment gagnant est calculé mathématiquement (pas visuellement) — le résultat est choisi avant le lancement, puis la rotation est calculée pour y amener le pointeur
 
 **Cadeaux disponibles :**
 
-| Emoji | Cadeau          | Couleur segment |
-|-------|-----------------|-----------------|
-| 🍗   | 4 Nuggets       | `#D62300` rouge |
-| 🍔   | Cheeseburger    | `#F5A623` orange|
-| 🍦   | Sundae          | `#1A1A1A` noir  |
-| 🧅   | 6 Onion Rings   | `#502314` marron|
+| Emoji | Cadeau              | Couleur segment  |
+|-------|---------------------|------------------|
+| 🍗   | 4 Nuggets           | `#D62300` rouge  |
+| 🍔   | Cheeseburger        | `#F5A623` orange |
+| 🍦   | King Fusion M&M's   | `#1A1A1A` noir   |
+| 🧅   | 6 Onion Rings       | `#502314` marron |
+| 🥧   | Pâtisserie          | `#F5C518` jaune  |
 
 **Mathématique de la rotation :**
 ```
@@ -96,37 +102,62 @@ finalAngle = startAngle - delta - extraTurns
 
 ---
 
+### 5. Dashboard admin + configuration Firestore
+
+**Décision :** Ajouter `admin.html/admin.js` avec Firebase Auth Email/Password et deux toggles stockés dans Firestore.
+
+**Raison :** Permettre au gérant d'activer/désactiver la roulette et l'envoi d'email sans toucher au code. Firestore `onSnapshot` → UI réactive sans polling.
+
+**Implémentation :**
+- `config/settings.roulette_enabled` (bool) → branching dans `feedback.js` post-submit
+- `config/settings.email_enabled` (bool) → skip Web3Forms si false
+- Valeur absente ou doc inexistant → comportement par défaut activé (pas de crash)
+- Event listeners sur les toggles placés une seule fois (hors `showDashboard()`) pour éviter l'accumulation sur re-render
+
+---
+
+### 6. Séparation environnements DEV / PROD
+
+**Décision :** Deux fichiers `config/dev.js` et `config/prod.js`, copiés vers `public/config.js` par `build.sh` avant déploiement.
+
+**Raison :** Éviter de polluer la collection Firestore de prod pendant les tests. Chaque env a sa propre collection (`config-dev/settings` vs `config/settings`) et sa propre clé Web3Forms.
+
+**Implémentation :**
+- `config/dev.js` : `GOOGLE_REVIEWS_URL: '#'` (pas de redirect accidentel), bandeau DEV orange auto-injecté
+- `config/prod.js` : clé prod Web3Forms `854bf41c-...`, URL Google réelle
+- `public/config.js` est gitignored (fichier généré)
+- Firestore rules mises à jour pour autoriser `config-dev`
+
+---
+
 ## Configuration à personnaliser
 
 ### URL Google Reviews
 
-Dans `public/script.js`, ligne 2 :
+Dans `config/prod.js` :
 ```js
-const GOOGLE_REVIEWS_URL = 'https://www.google.com/maps/place/...';
+GOOGLE_REVIEWS_URL: 'https://g.page/r/XXXXXXXXXXXXXXXX/review',
 ```
-À remplacer par l'URL Google Maps de l'établissement concerné.
-Format court recommandé : `https://g.page/r/XXXXXXXXXXXXXXXX/review`
 
-### Clé Web3Forms
+### Clés Web3Forms
 
-Dans `public/feedback.js`, ligne 1 :
-```js
-const WEB3FORMS_KEY = '39c512ae-ad7f-4a07-8b89-474adc23c163';
-```
-Créer un compte sur [web3forms.com](https://web3forms.com), générer une clé liée à l'adresse email du gérant, et remplacer cette valeur.
+- Prod (`config/prod.js`) : `854bf41c-...`
+- Dev (`config/dev.js`) : `39c512ae-ad7f-4a07-8b89-474adc23c163`
+
+Chaque clé est liée à une adresse email de destination — intentionnellement visible dans le code (pas de risque de sécurité).
 
 ### Cadeaux de la roulette
 
-Dans `public/feedback.js`, tableau `PRIZES` :
+Dans `public/feedback.js`, tableau `PRIZES` — toujours **5 entrées** (segments de 72°) :
 ```js
 const PRIZES = [
-  { emoji: '🍗', label: '4 Nuggets',     color: '#D62300', textColor: '#fff' },
-  { emoji: '🍔', label: 'Cheeseburger',  color: '#F5A623', textColor: '#1A1A1A' },
-  { emoji: '🍦', label: 'Sundae',        color: '#1A1A1A', textColor: '#fff' },
-  { emoji: '🧅', label: '6 Onion Rings', color: '#502314', textColor: '#fff' },
+  { emoji: '🍗', label: '4 Nuggets',          color: '#D62300', textColor: '#fff',     imgSrc: 'images/nuggets.png' },
+  { emoji: '🍔', label: 'Cheeseburger',        color: '#F5A623', textColor: '#1A1A1A', imgSrc: 'images/cheeseburger.png' },
+  { emoji: '🍦', label: "King Fusion M&M's",   color: '#1A1A1A', textColor: '#fff',     imgSrc: 'images/kingfusion.png' },
+  { emoji: '🧅', label: '6 Onion Rings',       color: '#502314', textColor: '#fff',     imgSrc: 'images/onionrings.png' },
+  { emoji: '🥧', label: 'Pâtisserie',          color: '#F5C518', textColor: '#1A1A1A', imgSrc: 'images/patisserie.png' },
 ];
 ```
-Modifier les `label` et `emoji` pour changer les produits offerts. Toujours garder **4 entrées** (la roue est divisée en 4 segments égaux de 90°).
 
 ---
 
@@ -146,16 +177,30 @@ Variables CSS définies dans `style.css` :
 
 ```
 burger-king-avis/
-├── DECISIONS.md          ← ce fichier
-├── firebase.json         ← configuration Firebase Hosting (public: "public")
-├── .firebaserc           ← identifiant du projet Firebase (à remplir)
-└── public/
-    ├── index.html        ← page de notation (5 étoiles)
-    ├── script.js         ← logique de redirection selon la note
-    ├── feedback.html     ← formulaire de feedback (1-4 étoiles)
-    ├── feedback.js       ← soumission email + logique roulette
-    ├── style.css         ← styles partagés (thème BK)
-    └── 404.html          ← page d'erreur personnalisée
+├── DECISIONS.md
+├── README.md
+├── TESTS.md
+├── firebase.json         ← hosting + firestore config
+├── firestore.rules       ← read public, write auth only
+├── build.sh              ← copie config/$ENV.js → public/config.js
+├── .firebaserc
+├── .gitignore
+├── config/
+│   ├── dev.js            ← constantes DEV
+│   └── prod.js           ← constantes PROD
+├── public/
+│   ├── config.js         ← généré par build.sh (gitignored)
+│   ├── index.html        ← page de notation (5 étoiles)
+│   ├── script.js         ← logique de redirection selon la note
+│   ├── feedback.html     ← formulaire de feedback (1-4 étoiles)
+│   ├── feedback.js       ← soumission email + roulette + config Firestore
+│   ├── admin.html        ← dashboard admin (login + toggles)
+│   ├── admin.js          ← Firebase Auth + Firestore onSnapshot + toggles
+│   ├── style.css         ← styles partagés (thème BK)
+│   ├── 404.html          ← page d'erreur personnalisée
+│   └── images/           ← photos des cadeaux roulette (.png)
+└── tests/
+    └── test.js           ← 92 tests (Node.js natif)
 ```
 
 ---
@@ -163,17 +208,14 @@ burger-king-avis/
 ## Déploiement
 
 ```bash
-# Installer Firebase CLI (une seule fois)
-npm install -g firebase-tools
+# DEV (test local)
+ENV=dev ./build.sh && firebase serve
 
-# Se connecter
-firebase login
-
-# Déployer
-firebase deploy
+# PROD
+ENV=prod ./build.sh && firebase deploy
 ```
 
-L'URL publique est fournie après déploiement. C'est cette URL qui doit être encodée dans le QR code à imprimer en restaurant.
+URL publique : **https://burger-king-avis.web.app**
 
 ---
 

@@ -12,9 +12,12 @@ parent: "[[BurgerKingAvis/spec]]"
 -
 
 ## À faire
-- [ ] Finaliser login admin : compléter reset password Firebase → tester toggle roulette
 - [ ] Générer QR code → https://burger-king-avis.web.app → imprimer en restaurant
-- [ ] Implémenter Firestore pour stocker les avis (alternative/complément email)
+- [ ] Enregistrer chaque avis soumis dans Firestore (collection `avis`)
+- [ ] Dashboard : compteur total d'avis reçus
+- [ ] Dashboard : compteur de produits gagnés (par type)
+- [ ] Dashboard : répartition des avis par nombre d'étoiles (1★ à 4★)
+- [ ] Analyser les produits gagnés à la roulette (fréquence par prix)
 
 ## Fait
 - [x] Créé projet `~/Projet/burger-king-avis` + git init + GitHub repo
@@ -41,3 +44,11 @@ parent: "[[BurgerKingAvis/spec]]"
 - [x] `feedback.js` lecture config Firestore + branche roulette vs merci simple
 - [x] `cleanUrls: true` dans firebase.json → `/admin` accessible sans extension
 - [x] Firebase web app enregistrée + deploy firestore rules + hosting
+- [x] Fix login admin : user créé dans Firebase Console → auth fonctionnel ✅
+- [x] Toggle roulette ON/OFF testé bout en bout ✅
+- [x] Toggle email (`email_enabled`) dans dashboard admin + feedback.js conditionnel
+- [x] Fix bug event listeners (hors showDashboard → plus d'accumulation)
+- [x] Séparation DEV/PROD : `config/dev.js`, `config/prod.js`, `build.sh`
+- [x] Bandeau DEV orange sur toutes les pages (intégré dans config/dev.js)
+- [x] Isolation Firestore : `config` (prod) vs `config-dev` (dev)
+- [x] Suite tests étendue : 92 tests (sections 11-14 ajoutées)

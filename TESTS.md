@@ -8,7 +8,7 @@ node tests/test.js
 
 Aucune dépendance externe requise. Node.js suffit (module natif `assert`).
 
-Résultat attendu : **29 tests réussis, 0 échec.**
+Résultat attendu : **92 tests réussis, 0 échec.**
 
 ---
 
@@ -30,7 +30,7 @@ Lors de l'écriture du test de validation des couleurs hex, le regex initial `/^
 
 ---
 
-## Détail des 5 sections de tests
+## Détail des 14 sections de tests
 
 ---
 
@@ -166,6 +166,121 @@ C'est le cœur de la stratégie produit : les clients satisfaits doivent aller s
 | `3` | `feedback.html?stars=3` |
 | `2` | `feedback.html?stars=2` |
 | `1` | `feedback.html?stars=1` |
+
+---
+
+### 6. darkenHex — 5 tests
+
+**Pourquoi ce test ?**
+`darkenHex` génère la teinte de fond de la section prize reveal. Une couleur corrompue afficherait un fond transparent ou noir.
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| `amount=0` → couleur inchangée | Cas trivial |
+| Assombrit `#FF8732` de 55 | Calcul canal correct |
+| Clamp à 0 si canal négatif | Pas de valeurs négatives en hex |
+| `#000000` reste `#000000` | Borne basse |
+| Résultat toujours hex 6 chiffres | Format valide pour CSS |
+
+---
+
+### 7. isLight (fond clair pour prize reveal) — 3 tests
+
+**Pourquoi ce test ?**
+Détermine si le texte affiché sur le cadeau doit être sombre ou clair. Une erreur → texte illisible.
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| Exactement 1 prix a fond clair | Seul "6 Onion Rings" (jaune) |
+| Ce prix est bien "6 Onion Rings" | Identification correcte |
+| Les 4 autres ont `textColor` blanc | Pas de faux positif |
+
+---
+
+### 8. Génération HTML étoiles — 6 tests
+
+| Entrée | Ce qui est vérifié |
+|--------|--------------------|
+| stars=1 à 5 | N filled + (5-N) empty = 5 toujours |
+
+---
+
+### 9. Cohérence avancée PRIZES — 4 tests
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| Labels uniques | Pas de doublons |
+| Couleurs segments uniques | Roue visuellement distincte |
+| `imgSrc` termine par `.png` | Format image correct |
+| `imgSrc` commence par `images/` | Chemin relatif valide |
+
+---
+
+### 10. easeOut décélération — 2 tests
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| Vitesse décroissante sur 10 pas | Pas d'accélération en cours de route |
+| `easeOut(0.25) > 0.5` | Départ rapide confirmé |
+
+---
+
+### 11. Toggle roulette (lecture config Firestore) — 6 tests
+
+**Fichier source :** `public/feedback.js` + `public/admin.js`
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| Doc Firestore inexistant → roulette activée | Défaut sûr |
+| `roulette_enabled: true` → activée | Cas normal |
+| `roulette_enabled: false` → désactivée | Toggle off |
+| Champ absent dans doc existant → activée | `undefined !== false` |
+| `rouletteEnabled=true` → affiche `#roulette-section` | Branchement UI |
+| `rouletteEnabled=false` → affiche `#merci-section` | Branchement UI |
+
+---
+
+### 12. Toggle email (envoi Web3Forms conditionnel) — 8 tests
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| Doc inexistant → email activé | Défaut sûr |
+| `email_enabled: true/false` | Toggle |
+| Champ absent → activé | `undefined !== false` |
+| `emailEnabled=true` → envoi | Branchement |
+| `emailEnabled=false` → pas d'envoi | Skip Web3Forms |
+| Roulette et email indépendants | Email OFF n'affecte pas roulette |
+| Les deux OFF simultanément | Pas d'interaction |
+
+---
+
+### 13. Config environnements (dev/prod) — 20 tests
+
+| Catégorie | Ce qui est vérifié |
+|-----------|--------------------|
+| Structure | 5 champs requis présents dans dev et prod |
+| ENV | `dev.ENV = "dev"`, `prod.ENV = "prod"` |
+| Clés | Non vides, différentes entre dev et prod |
+| URLs | `dev.GOOGLE_REVIEWS_URL = "#"`, `prod` commence par `https://` |
+| `resolveKey()` | dev → clé dev, prod → clé prod, undefined → `""` |
+| `resolveGoogleUrl()` | dev → `"#"`, prod → URL réelle, undefined → `"#"` |
+| `showDevBanner` | true en dev, false en prod et sans CONFIG |
+| Fichiers réels | `config/dev.js` et `config/prod.js` chargent sans erreur |
+
+---
+
+### 14. Isolation collections Firestore (dev/prod) — 8 tests
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| dev → collection `config-dev` | Isolation correcte |
+| prod → collection `config` | Collection prod |
+| dev ≠ prod | Pas de pollution croisée |
+| doc = `settings` dans les deux | Cohérence doc |
+| ref dev = `config-dev/settings` | Chemin complet |
+| ref prod = `config/settings` | Chemin complet |
+| Sans CONFIG → fallback `config/settings` | Défaut sûr |
+| refs dev et prod distinctes | Garantie isolation |
 
 ---
 

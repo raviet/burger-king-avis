@@ -128,6 +128,36 @@ parent: "[[BurgerKingAvis/spec]]"
 
 ---
 
+## Toggle email (`email_enabled`) dans Firestore
+
+**Contexte** : Pendant les tests, les avis soumis envoyaient de vrais emails au gérant. Besoin de pouvoir couper l'envoi sans redéployer.
+
+**Décision** : Champ `email_enabled: bool` dans `config/settings` Firestore. Toggle dans dashboard admin. `feedback.js` skip Web3Forms si `email_enabled === false`.
+
+**Conséquences** : Event listeners dashboard déplacés hors de `showDashboard()` (bug : accumulation à chaque re-render `onAuthStateChanged`).
+
+---
+
+## Séparation DEV/PROD via config/dev.js + build.sh
+
+**Contexte** : Clés Web3Forms, URL Google et collection Firestore hardcodées → tests en dev polluaient prod (emails au gérant, redirect Google).
+
+**Décision** : `config/dev.js` et `config/prod.js` contiennent `ENV`, `WEB3FORMS_KEY`, `GOOGLE_REVIEWS_URL`, `FIRESTORE_COLLECTION`, `FIRESTORE_CONFIG_DOC`. `build.sh [dev|prod]` copie le bon fichier vers `public/config.js`. `public/config.js` dans `.gitignore`. Bandeau DEV orange sticky intégré directement dans `config/dev.js` (IIFE).
+
+**Conséquences** : Déploiement prod = `bash build.sh prod && firebase deploy`. Dev = `bash build.sh dev && firebase serve`. Aucune variable d'environnement serveur nécessaire (site 100% statique).
+
+---
+
+## Isolation Firestore dev/prod par collection distincte
+
+**Contexte** : Même Firestore partagée → toggle admin en dev affectait les toggles prod.
+
+**Décision** : Deux collections distinctes : `config` (prod) et `config-dev` (dev). Document `settings` identique dans les deux. `firestore.rules` étendu pour autoriser `config-dev`. `admin.js` et `feedback.js` lisent `CONFIG.FIRESTORE_COLLECTION` au runtime.
+
+**Conséquences** : Toggles complètement isolés entre envs. Pas de second projet Firebase nécessaire.
+
+---
+
 ## Firebase web app enregistrée (session 2026-05-16)
 
 **Contexte** : Le projet Firebase `burger-king-avis` n'avait pas d'app web enregistrée (`.firebaserc` vide, aucun SDK config disponible).

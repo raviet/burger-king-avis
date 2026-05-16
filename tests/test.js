@@ -280,6 +280,166 @@ test('vitesse décroissante : incrément plus petit à chaque pas', () => {
 test('easeOut(0.25) > 0.5 : première moitié du temps > moitié du chemin', () =>
   assert(easeOut(0.25) > 0.5, `easeOut(0.25)=${easeOut(0.25).toFixed(3)}`));
 
+// ─── 11. Logique toggle roulette ─────────────────────────────────────────────
+
+console.log('\n11. Toggle roulette (lecture config Firestore)');
+
+function resolveRouletteEnabled(docExists, docData) {
+  if (!docExists) return true;
+  return docData.roulette_enabled !== false;
+}
+
+test('doc inexistant → roulette activée par défaut', () =>
+  assert.strictEqual(resolveRouletteEnabled(false, {}), true));
+test('roulette_enabled: true → activée', () =>
+  assert.strictEqual(resolveRouletteEnabled(true, { roulette_enabled: true }), true));
+test('roulette_enabled: false → désactivée', () =>
+  assert.strictEqual(resolveRouletteEnabled(true, { roulette_enabled: false }), false));
+test('champ absent dans doc existant → activée (undefined !== false)', () =>
+  assert.strictEqual(resolveRouletteEnabled(true, {}), true));
+
+function postSubmitSection(rouletteEnabled) {
+  return rouletteEnabled ? 'roulette-section' : 'merci-section';
+}
+
+test('rouletteEnabled=true → affiche roulette-section', () =>
+  assert.strictEqual(postSubmitSection(true), 'roulette-section'));
+test('rouletteEnabled=false → affiche merci-section', () =>
+  assert.strictEqual(postSubmitSection(false), 'merci-section'));
+
+// ─── 12. Toggle email (lecture config Firestore) ─────────────────────────────
+
+console.log('\n12. Toggle email (envoi Web3Forms conditionnel)');
+
+function resolveEmailEnabled(docExists, docData) {
+  if (!docExists) return true;
+  return docData.email_enabled !== false;
+}
+
+test('doc inexistant → email activé par défaut', () =>
+  assert.strictEqual(resolveEmailEnabled(false, {}), true));
+test('email_enabled: true → activé', () =>
+  assert.strictEqual(resolveEmailEnabled(true, { email_enabled: true }), true));
+test('email_enabled: false → désactivé', () =>
+  assert.strictEqual(resolveEmailEnabled(true, { email_enabled: false }), false));
+test('champ absent dans doc existant → activé (undefined !== false)', () =>
+  assert.strictEqual(resolveEmailEnabled(true, {}), true));
+
+function shouldSendEmail(emailEnabled) { return emailEnabled; }
+
+test('emailEnabled=true → envoi', () => assert.strictEqual(shouldSendEmail(true), true));
+test('emailEnabled=false → pas d\'envoi', () => assert.strictEqual(shouldSendEmail(false), false));
+
+test('roulette et email indépendants : email OFF n\'affecte pas roulette', () => {
+  const roulette = resolveRouletteEnabled(true, { roulette_enabled: true, email_enabled: false });
+  const email    = resolveEmailEnabled(true,    { roulette_enabled: true, email_enabled: false });
+  assert.strictEqual(roulette, true);
+  assert.strictEqual(email,    false);
+});
+
+test('les deux OFF simultanément', () => {
+  const data = { roulette_enabled: false, email_enabled: false };
+  assert.strictEqual(resolveRouletteEnabled(true, data), false);
+  assert.strictEqual(resolveEmailEnabled(true, data),    false);
+});
+
+// ─── 13. Config environnements dev/prod ──────────────────────────────────────
+
+console.log('\n13. Config environnements (dev / prod)');
+
+const DEV_CONFIG  = { ENV: 'dev',  WEB3FORMS_KEY: '39c512ae-ad7f-4a07-8b89-474adc23c163', GOOGLE_REVIEWS_URL: '#',        FIRESTORE_COLLECTION: 'config-dev', FIRESTORE_CONFIG_DOC: 'settings' };
+const PROD_CONFIG = { ENV: 'prod', WEB3FORMS_KEY: '854bf41c-060a-420a-948b-6961027f7f63', GOOGLE_REVIEWS_URL: 'https://www.google.com/maps/place/Burger+King/@48.8203079,2.6217964,15z/data=!4m8!3m7!1s0x47e60fd6c70c054d:0xe65143e7bc07dd47!8m2!3d48.8224029!4d2.6165143!9m1!1b1!16s%2Fg%2F11xmf5xbvs?entry=ttu&g_ep=EgoyMDI2MDUxMi4wIKXMDSoASAFQAw%3D%3D', FIRESTORE_COLLECTION: 'config',     FIRESTORE_CONFIG_DOC: 'settings' };
+
+function resolveKey(cfg)      { return (typeof cfg !== 'undefined') ? cfg.WEB3FORMS_KEY    : ''; }
+function resolveGoogleUrl(cfg){ return (typeof cfg !== 'undefined') ? cfg.GOOGLE_REVIEWS_URL : '#'; }
+function showDevBanner(cfg)   { return typeof cfg !== 'undefined' && cfg.ENV === 'dev'; }
+
+const REQUIRED_FIELDS = ['ENV', 'WEB3FORMS_KEY', 'GOOGLE_REVIEWS_URL', 'FIRESTORE_COLLECTION', 'FIRESTORE_CONFIG_DOC'];
+
+// Structure
+test('dev : 5 champs requis présents', () => {
+  REQUIRED_FIELDS.forEach(k => assert(k in DEV_CONFIG, `dev manque ${k}`));
+});
+test('prod : 5 champs requis présents', () => {
+  REQUIRED_FIELDS.forEach(k => assert(k in PROD_CONFIG, `prod manque ${k}`));
+});
+
+// ENV
+test('dev.ENV = "dev"',   () => assert.strictEqual(DEV_CONFIG.ENV,  'dev'));
+test('prod.ENV = "prod"', () => assert.strictEqual(PROD_CONFIG.ENV, 'prod'));
+
+// WEB3FORMS_KEY
+test('dev.WEB3FORMS_KEY non vide',  () => assert(DEV_CONFIG.WEB3FORMS_KEY.length  > 0));
+test('prod.WEB3FORMS_KEY non vide', () => assert(PROD_CONFIG.WEB3FORMS_KEY.length > 0));
+test('dev et prod ont des clés différentes', () =>
+  assert.notStrictEqual(DEV_CONFIG.WEB3FORMS_KEY, PROD_CONFIG.WEB3FORMS_KEY));
+
+// GOOGLE_REVIEWS_URL
+test('dev.GOOGLE_REVIEWS_URL = "#" (pas de redirection)', () =>
+  assert.strictEqual(DEV_CONFIG.GOOGLE_REVIEWS_URL, '#'));
+test('prod.GOOGLE_REVIEWS_URL commence par https://', () =>
+  assert(PROD_CONFIG.GOOGLE_REVIEWS_URL.startsWith('https://'), PROD_CONFIG.GOOGLE_REVIEWS_URL));
+
+// Résolution runtime
+test('resolveKey(dev)  → clé dev',  () => assert.strictEqual(resolveKey(DEV_CONFIG),  DEV_CONFIG.WEB3FORMS_KEY));
+test('resolveKey(prod) → clé prod', () => assert.strictEqual(resolveKey(PROD_CONFIG), PROD_CONFIG.WEB3FORMS_KEY));
+test('resolveKey(undefined) → ""',  () => assert.strictEqual(resolveKey(undefined),   ''));
+test('resolveGoogleUrl(dev)  → "#"',        () => assert.strictEqual(resolveGoogleUrl(DEV_CONFIG),  '#'));
+test('resolveGoogleUrl(prod) → URL réelle', () => assert(resolveGoogleUrl(PROD_CONFIG).startsWith('https://')));
+test('resolveGoogleUrl(undefined) → "#"',   () => assert.strictEqual(resolveGoogleUrl(undefined),   '#'));
+
+// Bandeau DEV
+test('showDevBanner en dev',        () => assert.strictEqual(showDevBanner(DEV_CONFIG),  true));
+test('showDevBanner en prod = false', () => assert.strictEqual(showDevBanner(PROD_CONFIG), false));
+test('showDevBanner sans CONFIG = false', () => assert.strictEqual(showDevBanner(undefined), false));
+
+// Cohérence fichiers réels
+test('config/dev.js charge correctement', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../config/dev.js'), 'utf8');
+  assert(src.includes("ENV: 'dev'"));
+  assert(src.includes('WEB3FORMS_KEY'));
+  assert(src.includes("GOOGLE_REVIEWS_URL: '#'"));
+  assert(src.includes('FIRESTORE_COLLECTION'));
+  assert(src.includes('FIRESTORE_CONFIG_DOC'));
+});
+test('config/prod.js charge correctement', () => {
+  const src = require('fs').readFileSync(require('path').join(__dirname, '../config/prod.js'), 'utf8');
+  assert(src.includes("ENV: 'prod'"));
+  assert(src.includes('WEB3FORMS_KEY'));
+  assert(src.includes('https://'));
+  assert(src.includes('FIRESTORE_COLLECTION'));
+  assert(src.includes('FIRESTORE_CONFIG_DOC'));
+});
+
+// ─── 14. Isolation collections Firestore dev/prod ────────────────────────────
+
+console.log('\n14. Isolation collections Firestore (dev/prod)');
+
+function resolveFirestoreRef(cfg) {
+  const col = (typeof cfg !== 'undefined') ? cfg.FIRESTORE_COLLECTION : 'config';
+  const doc = (typeof cfg !== 'undefined') ? cfg.FIRESTORE_CONFIG_DOC : 'settings';
+  return `${col}/${doc}`;
+}
+
+test('dev → collection "config-dev"', () =>
+  assert.strictEqual(DEV_CONFIG.FIRESTORE_COLLECTION, 'config-dev'));
+test('prod → collection "config"', () =>
+  assert.strictEqual(PROD_CONFIG.FIRESTORE_COLLECTION, 'config'));
+test('dev et prod ont des collections différentes', () =>
+  assert.notStrictEqual(DEV_CONFIG.FIRESTORE_COLLECTION, PROD_CONFIG.FIRESTORE_COLLECTION));
+test('doc = "settings" dans les deux envs', () => {
+  assert.strictEqual(DEV_CONFIG.FIRESTORE_CONFIG_DOC,  'settings');
+  assert.strictEqual(PROD_CONFIG.FIRESTORE_CONFIG_DOC, 'settings');
+});
+test('ref dev = "config-dev/settings"', () =>
+  assert.strictEqual(resolveFirestoreRef(DEV_CONFIG),  'config-dev/settings'));
+test('ref prod = "config/settings"', () =>
+  assert.strictEqual(resolveFirestoreRef(PROD_CONFIG), 'config/settings'));
+test('ref sans CONFIG → fallback "config/settings"', () =>
+  assert.strictEqual(resolveFirestoreRef(undefined), 'config/settings'));
+test('refs dev et prod sont distinctes → pas de pollution croisée', () =>
+  assert.notStrictEqual(resolveFirestoreRef(DEV_CONFIG), resolveFirestoreRef(PROD_CONFIG)));
+
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(45)}`);

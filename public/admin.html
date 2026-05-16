@@ -229,6 +229,19 @@
       </label>
     </div>
 
+    <hr class="divider" />
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Envoi d'email</div>
+        <div class="toggle-sub" id="email-toggle-sub">Chargement…</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="email-toggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
+
     <p class="status-line" id="status-line"></p>
     <hr class="divider" />
     <p class="user-info" id="user-info"></p>
@@ -238,6 +251,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="config.js"></script>
   <script src="admin.js"></script>
 </body>
 </html>
