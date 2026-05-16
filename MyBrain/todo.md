@@ -13,6 +13,7 @@ parent: "[[BurgerKingAvis/spec]]"
 
 ## À faire
 - [ ] Générer QR code → https://burger-king-avis.web.app → imprimer en restaurant
+- [ ] Icône "Add to Home Screen" : se renseigner sur `apple-touch-icon` + PWA manifest pour afficher icône BK quand ajouté à l'écran d'accueil iPhone/Android
 
 ## Fait
 - [x] Créé projet `~/Projet/burger-king-avis` + git init + GitHub repo

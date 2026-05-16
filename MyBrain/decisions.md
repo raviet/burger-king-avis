@@ -166,3 +166,33 @@ parent: "[[BurgerKingAvis/spec]]"
 
 **Conséquences** : API key exposée côté client (`AIzaSyBcHaY5...`) — acceptable, clé publique Firebase restreinte à ce domaine.
 
+---
+
+## Enregistrement avis dans Firestore (collection `avis`)
+
+**Contexte** : Email seul = pas d'historique consultable. Besoin de données pour dashboard et analyse roulette.
+
+**Décision** : Deux étapes dans `feedback.js` : (1) `db.collection(AVIS_COL).add({ stars, message, timestamp })` à submit → `avisRef` stocké en mémoire. (2) `avisRef.update({ prize: prize.label })` dans `showPrize()` après roulette. Collections isolées par env (`avis` prod / `avis-dev` dev) via `CONFIG.AVIS_COLLECTION`. Règles : create+update public (client non auth), read auth seulement (admin), delete interdit.
+
+**Conséquences** : Si l'update prize échoue (silencieux via `.catch(() => {})`), le doc avis existe sans champ `prize`. Acceptable — l'avis est capturé même si la mise à jour prize rate. Pas de blocage UX.
+
+---
+
+## Dashboard stats temps réel (admin.js)
+
+**Contexte** : Dashboard admin ne montrait que les toggles. Pas de visibilité sur le volume d'avis ou la distribution.
+
+**Décision** : `onSnapshot(AVIS_COL)` → `updateStats()` à chaque changement. Calcul côté client : total, `byStars` (1-4), `byPrize` (dict label→count). Barres proportionnelles au max de chaque axe (pas au total) → lisibilité même avec volumes déséquilibrés.
+
+**Conséquences** : Lecture Firestore en continu (coût Spark négligeable à faible volume). `unsubscribeAvis` nettoyé dans `showLogin()` pour éviter les listeners orphelins.
+
+---
+
+## Analyse prizes : % + taux roulette
+
+**Contexte** : Liste des prizes avec count seul insuffisante pour juger l'équité et le taux d'engagement.
+
+**Décision** : Afficher pour chaque prize : barre proportionnelle au max, count, % du total distribué. Taux roulette global = prizes distribués / total avis (visible uniquement si ≥1 prize). Pas de comparaison avec le taux théorique (20%) — trop complexe à lire pour un gérant non-tech.
+
+**Conséquences** : Logique de calcul purement client (pas de Cloud Function). Suffit pour identifier si un prize est sur/sous-représenté visuellement.
+
