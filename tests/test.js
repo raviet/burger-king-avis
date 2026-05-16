@@ -347,20 +347,20 @@ test('les deux OFF simultanément', () => {
 
 console.log('\n13. Config environnements (dev / prod)');
 
-const DEV_CONFIG  = { ENV: 'dev',  WEB3FORMS_KEY: '39c512ae-ad7f-4a07-8b89-474adc23c163', GOOGLE_REVIEWS_URL: '#',        FIRESTORE_COLLECTION: 'config-dev', FIRESTORE_CONFIG_DOC: 'settings' };
-const PROD_CONFIG = { ENV: 'prod', WEB3FORMS_KEY: '854bf41c-060a-420a-948b-6961027f7f63', GOOGLE_REVIEWS_URL: 'https://www.google.com/maps/place/Burger+King/@48.8203079,2.6217964,15z/data=!4m8!3m7!1s0x47e60fd6c70c054d:0xe65143e7bc07dd47!8m2!3d48.8224029!4d2.6165143!9m1!1b1!16s%2Fg%2F11xmf5xbvs?entry=ttu&g_ep=EgoyMDI2MDUxMi4wIKXMDSoASAFQAw%3D%3D', FIRESTORE_COLLECTION: 'config',     FIRESTORE_CONFIG_DOC: 'settings' };
+const DEV_CONFIG  = { ENV: 'dev',  WEB3FORMS_KEY: '39c512ae-ad7f-4a07-8b89-474adc23c163', GOOGLE_REVIEWS_URL: '#',        FIRESTORE_COLLECTION: 'config-dev', FIRESTORE_CONFIG_DOC: 'settings', AVIS_COLLECTION: 'avis-dev' };
+const PROD_CONFIG = { ENV: 'prod', WEB3FORMS_KEY: '854bf41c-060a-420a-948b-6961027f7f63', GOOGLE_REVIEWS_URL: 'https://www.google.com/maps/place/Burger+King/@48.8203079,2.6217964,15z/data=!4m8!3m7!1s0x47e60fd6c70c054d:0xe65143e7bc07dd47!8m2!3d48.8224029!4d2.6165143!9m1!1b1!16s%2Fg%2F11xmf5xbvs?entry=ttu&g_ep=EgoyMDI2MDUxMi4wIKXMDSoASAFQAw%3D%3D', FIRESTORE_COLLECTION: 'config',     FIRESTORE_CONFIG_DOC: 'settings', AVIS_COLLECTION: 'avis' };
 
 function resolveKey(cfg)      { return (typeof cfg !== 'undefined') ? cfg.WEB3FORMS_KEY    : ''; }
 function resolveGoogleUrl(cfg){ return (typeof cfg !== 'undefined') ? cfg.GOOGLE_REVIEWS_URL : '#'; }
 function showDevBanner(cfg)   { return typeof cfg !== 'undefined' && cfg.ENV === 'dev'; }
 
-const REQUIRED_FIELDS = ['ENV', 'WEB3FORMS_KEY', 'GOOGLE_REVIEWS_URL', 'FIRESTORE_COLLECTION', 'FIRESTORE_CONFIG_DOC'];
+const REQUIRED_FIELDS = ['ENV', 'WEB3FORMS_KEY', 'GOOGLE_REVIEWS_URL', 'FIRESTORE_COLLECTION', 'FIRESTORE_CONFIG_DOC', 'AVIS_COLLECTION'];
 
 // Structure
-test('dev : 5 champs requis présents', () => {
+test('dev : 6 champs requis présents', () => {
   REQUIRED_FIELDS.forEach(k => assert(k in DEV_CONFIG, `dev manque ${k}`));
 });
-test('prod : 5 champs requis présents', () => {
+test('prod : 6 champs requis présents', () => {
   REQUIRED_FIELDS.forEach(k => assert(k in PROD_CONFIG, `prod manque ${k}`));
 });
 
@@ -401,6 +401,7 @@ test('config/dev.js charge correctement', () => {
   assert(src.includes("GOOGLE_REVIEWS_URL: '#'"));
   assert(src.includes('FIRESTORE_COLLECTION'));
   assert(src.includes('FIRESTORE_CONFIG_DOC'));
+  assert(src.includes('AVIS_COLLECTION'));
 });
 test('config/prod.js charge correctement', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '../config/prod.js'), 'utf8');
@@ -409,6 +410,7 @@ test('config/prod.js charge correctement', () => {
   assert(src.includes('https://'));
   assert(src.includes('FIRESTORE_COLLECTION'));
   assert(src.includes('FIRESTORE_CONFIG_DOC'));
+  assert(src.includes('AVIS_COLLECTION'));
 });
 
 // ─── 14. Isolation collections Firestore dev/prod ────────────────────────────
@@ -439,6 +441,56 @@ test('ref sans CONFIG → fallback "config/settings"', () =>
   assert.strictEqual(resolveFirestoreRef(undefined), 'config/settings'));
 test('refs dev et prod sont distinctes → pas de pollution croisée', () =>
   assert.notStrictEqual(resolveFirestoreRef(DEV_CONFIG), resolveFirestoreRef(PROD_CONFIG)));
+
+// AVIS_COLLECTION
+test('dev.AVIS_COLLECTION = "avis-dev"', () =>
+  assert.strictEqual(DEV_CONFIG.AVIS_COLLECTION, 'avis-dev'));
+test('prod.AVIS_COLLECTION = "avis"', () =>
+  assert.strictEqual(PROD_CONFIG.AVIS_COLLECTION, 'avis'));
+test('avis dev et prod isolées', () =>
+  assert.notStrictEqual(DEV_CONFIG.AVIS_COLLECTION, PROD_CONFIG.AVIS_COLLECTION));
+
+// ─── 15. Payload avis Firestore ───────────────────────────────────────────────
+
+console.log('\n15. Payload avis Firestore');
+
+function buildAvisPayload(stars, message) {
+  return { stars, message };
+}
+
+function buildPrizeUpdate(prizeLabel) {
+  return { prize: prizeLabel };
+}
+
+function resolveAvisCollection(cfg) {
+  return (typeof cfg !== 'undefined') ? cfg.AVIS_COLLECTION : 'avis';
+}
+
+test('payload contient stars et message', () => {
+  const p = buildAvisPayload(3, 'Bon burger');
+  assert.strictEqual(p.stars, 3);
+  assert.strictEqual(p.message, 'Bon burger');
+});
+test('stars clampé 1-4 dans le payload', () => {
+  for (let s = 1; s <= 4; s++) {
+    const p = buildAvisPayload(s, 'test');
+    assert(p.stars >= 1 && p.stars <= 4);
+  }
+});
+test('prize update contient le label exact', () => {
+  PRIZES.forEach(prize => {
+    const u = buildPrizeUpdate(prize.label);
+    assert.strictEqual(u.prize, prize.label);
+  });
+});
+test('resolveAvisCollection(dev) → "avis-dev"', () =>
+  assert.strictEqual(resolveAvisCollection(DEV_CONFIG), 'avis-dev'));
+test('resolveAvisCollection(prod) → "avis"', () =>
+  assert.strictEqual(resolveAvisCollection(PROD_CONFIG), 'avis'));
+test('resolveAvisCollection(undefined) → "avis" (fallback prod)', () =>
+  assert.strictEqual(resolveAvisCollection(undefined), 'avis'));
+test('collections avis dev et prod distinctes', () =>
+  assert.notStrictEqual(resolveAvisCollection(DEV_CONFIG), resolveAvisCollection(PROD_CONFIG)));
 
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 

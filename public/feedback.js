@@ -12,8 +12,10 @@ const db = firebase.firestore();
 
 let rouletteEnabled = true;
 let emailEnabled = true;
-const CONFIG_COL = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
-const CONFIG_DOC = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
+const CONFIG_COL  = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
+const CONFIG_DOC  = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
+const AVIS_COL    = (typeof CONFIG !== 'undefined') ? CONFIG.AVIS_COLLECTION      : 'avis';
+let   avisRef     = null;
 const configPromise = db.collection(CONFIG_COL).doc(CONFIG_DOC).get()
   .then(doc => {
     if (doc.exists) {
@@ -91,6 +93,12 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
 
   try {
     await configPromise;
+
+    avisRef = await db.collection(AVIS_COL).add({
+      stars:     selectedStars,
+      message:   message,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    });
 
     if (emailEnabled) {
       const res = await fetch('https://api.web3forms.com/submit', {
@@ -299,6 +307,10 @@ function darkenHex(hex, amount) {
 function showPrize(winner) {
   const prize   = PRIZES[winner];
   const isLight = prize.textColor !== '#fff';
+
+  if (avisRef) {
+    avisRef.update({ prize: prize.label }).catch(() => {});
+  }
 
   document.getElementById('prize-emoji').innerHTML = `<img src="${prize.imgSrc}" alt="${prize.label}">`;
   document.getElementById('prize-name').textContent = prize.label;
