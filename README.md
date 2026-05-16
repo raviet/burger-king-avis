@@ -154,7 +154,7 @@ URL publique : **https://burger-king-avis.web.app**
 node tests/test.js
 ```
 
-Résultat attendu : **92 tests réussis, 0 échec.**
+Résultat attendu : **102 tests réussis, 0 échec.**
 
 ---
 
@@ -169,6 +169,3 @@ Responsive mobile-first.
 ## TODO
 
 - [ ] Générer QR code → https://burger-king-avis.web.app → imprimer en restaurant
-- [ ] Enregistrer chaque avis soumis dans Firestore (collection `avis`)
-- [ ] Dashboard : compteurs (total, par étoile, produits gagnés)
-- [ ] Analyser produits gagnés à la roulette (fréquence par prix)

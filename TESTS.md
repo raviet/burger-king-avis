@@ -8,7 +8,7 @@ node tests/test.js
 
 Aucune dépendance externe requise. Node.js suffit (module natif `assert`).
 
-Résultat attendu : **92 tests réussis, 0 échec.**
+Résultat attendu : **102 tests réussis, 0 échec.**
 
 ---
 
@@ -30,7 +30,7 @@ Lors de l'écriture du test de validation des couleurs hex, le regex initial `/^
 
 ---
 
-## Détail des 14 sections de tests
+## Détail des 15 sections de tests
 
 ---
 
@@ -258,7 +258,7 @@ Détermine si le texte affiché sur le cadeau doit être sombre ou clair. Une er
 
 | Catégorie | Ce qui est vérifié |
 |-----------|--------------------|
-| Structure | 5 champs requis présents dans dev et prod |
+| Structure | 6 champs requis présents dans dev et prod (incl. AVIS_COLLECTION) |
 | ENV | `dev.ENV = "dev"`, `prod.ENV = "prod"` |
 | Clés | Non vides, différentes entre dev et prod |
 | URLs | `dev.GOOGLE_REVIEWS_URL = "#"`, `prod` commence par `https://` |
@@ -281,6 +281,25 @@ Détermine si le texte affiché sur le cadeau doit être sombre ou clair. Une er
 | ref prod = `config/settings` | Chemin complet |
 | Sans CONFIG → fallback `config/settings` | Défaut sûr |
 | refs dev et prod distinctes | Garantie isolation |
+| dev.AVIS_COLLECTION = `avis-dev` | Isolation avis |
+| prod.AVIS_COLLECTION = `avis` | Collection prod |
+| avis dev ≠ avis prod | Pas de pollution croisée |
+
+---
+
+### 15. Payload avis Firestore — 7 tests
+
+**Fichier source :** `public/feedback.js`
+
+| Test | Ce qui est vérifié |
+|------|--------------------|
+| Payload contient `stars` et `message` | Champs obligatoires |
+| `stars` dans [1,4] pour toutes valeurs valides | Pas de valeur hors-range |
+| `buildPrizeUpdate` contient le label exact | Update prize correct |
+| `resolveAvisCollection(dev)` → `"avis-dev"` | Isolation dev |
+| `resolveAvisCollection(prod)` → `"avis"` | Collection prod |
+| `resolveAvisCollection(undefined)` → `"avis"` | Fallback prod sûr |
+| Collections avis dev et prod distinctes | Pas de pollution croisée |
 
 ---
 

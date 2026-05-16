@@ -13,11 +13,6 @@ parent: "[[BurgerKingAvis/spec]]"
 
 ## À faire
 - [ ] Générer QR code → https://burger-king-avis.web.app → imprimer en restaurant
-- [ ] Enregistrer chaque avis soumis dans Firestore (collection `avis`)
-- [ ] Dashboard : compteur total d'avis reçus
-- [ ] Dashboard : compteur de produits gagnés (par type)
-- [ ] Dashboard : répartition des avis par nombre d'étoiles (1★ à 4★)
-- [ ] Analyser les produits gagnés à la roulette (fréquence par prix)
 
 ## Fait
 - [x] Créé projet `~/Projet/burger-king-avis` + git init + GitHub repo
@@ -52,3 +47,9 @@ parent: "[[BurgerKingAvis/spec]]"
 - [x] Bandeau DEV orange sur toutes les pages (intégré dans config/dev.js)
 - [x] Isolation Firestore : `config` (prod) vs `config-dev` (dev)
 - [x] Suite tests étendue : 92 tests (sections 11-14 ajoutées)
+- [x] Sync docs README/DECISIONS/TESTS (reflet état réel) + fix 2 tests chemin __dirname
+- [x] Enregistrement avis Firestore : `{stars, message, timestamp}` à submit + `{prize}` post-roulette
+- [x] `AVIS_COLLECTION` isolée par env (avis / avis-dev) + rules create+update public
+- [x] Dashboard stats temps réel : total avis, barres par note 4★→1★
+- [x] Analyse prizes : barre + count + % par cadeau + taux roulette global
+- [x] 102 tests, 0 échec

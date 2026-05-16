@@ -130,6 +130,24 @@ finalAngle = startAngle - delta - extraTurns
 
 ---
 
+### 7. Enregistrement avis dans Firestore
+
+**Décision :** Sauvegarder chaque avis soumis dans Firestore (`avis` / `avis-dev`), puis mettre à jour le doc avec le prize gagné après la roulette.
+
+**Raison :** Historique des avis pour le dashboard admin (stats, analyse roulette). Deux étapes (create → update) pour ne pas bloquer l'UX : l'utilisateur voit la roulette même si l'update prize échoue silencieusement.
+
+**Implémentation :**
+- `feedback.js` : `avisRef = await db.collection(AVIS_COL).add({ stars, message, timestamp })` à submit
+- `showPrize()` : `avisRef.update({ prize: prize.label }).catch(() => {})` (silencieux si raté)
+- `AVIS_COLLECTION` dans config (isolé par env : `avis` prod / `avis-dev` dev)
+- Règles : `create + update` public (client non authentifié), `read` auth uniquement (admin), `delete` interdit
+
+**Dashboard stats (`admin.js`) :**
+- `onSnapshot(AVIS_COL)` → `updateStats()` : total, répartition par note, prizes triés par fréquence
+- % par prize + barre proportionnelle + taux roulette (prizes / total avis)
+
+---
+
 ## Configuration à personnaliser
 
 ### URL Google Reviews
