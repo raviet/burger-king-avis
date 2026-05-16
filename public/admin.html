@@ -241,26 +241,70 @@
       transition: width .4s ease;
     }
     .stat-star-count { color: rgba(80,35,20,.55); width: 28px; text-align: right; flex-shrink: 0; }
+    .stat-prizes-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
     .stat-prizes-title {
       font-family: 'Lilita One', cursive;
       font-size: .9rem;
       color: var(--brown);
     }
+    .stat-prizes-meta {
+      font-size: .75rem;
+      font-weight: 700;
+      color: rgba(80,35,20,.5);
+    }
     .stat-prize-row {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
       align-items: center;
-      justify-content: space-between;
-      font-size: .82rem;
+      gap: 7px;
+      font-size: .8rem;
       font-weight: 700;
       color: var(--brown);
-      padding: 3px 0;
+      padding: 4px 0;
+    }
+    .stat-prize-bar-track {
+      width: 60px;
+      height: 7px;
+      background: rgba(80,35,20,.12);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .stat-prize-bar-fill {
+      height: 100%;
+      background: var(--red);
+      border-radius: 99px;
+      transition: width .4s ease;
     }
     .stat-prize-count {
-      background: var(--red);
-      color: #fff;
-      border-radius: 99px;
-      padding: 1px 9px;
-      font-size: .78rem;
+      color: rgba(80,35,20,.7);
+      font-size: .8rem;
+      min-width: 18px;
+      text-align: right;
+    }
+    .stat-prize-pct {
+      color: rgba(80,35,20,.45);
+      font-size: .75rem;
+      min-width: 34px;
+      text-align: right;
+    }
+    .stat-taux {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .8rem;
+      font-weight: 700;
+      color: rgba(80,35,20,.6);
+      margin-top: 2px;
+    }
+    .stat-taux-num {
+      font-family: 'Lilita One', cursive;
+      font-size: 1.2rem;
+      color: var(--orange);
     }
     .stat-empty {
       font-size: .82rem;
@@ -352,8 +396,15 @@
       </div>
 
       <div>
-        <div class="stat-prizes-title">Produits gagnés</div>
+        <div class="stat-prizes-header">
+          <div class="stat-prizes-title">Produits gagnés</div>
+          <div class="stat-prizes-meta" id="stat-prizes-meta"></div>
+        </div>
         <div id="stat-prizes-list"><span class="stat-empty">Aucun avis encore</span></div>
+        <div class="stat-taux" id="stat-taux" style="display:none;margin-top:10px">
+          <span class="stat-taux-num" id="stat-taux-num">–</span>
+          <span>taux roulette</span>
+        </div>
       </div>
     </div>
 

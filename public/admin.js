@@ -174,12 +174,32 @@ function updateStats(avis) {
   });
 
   const prizeEntries = Object.entries(byPrize).sort((a, b) => b[1] - a[1]);
-  const listEl = document.getElementById('stat-prizes-list');
+  const totalPrizes  = prizeEntries.reduce((s, [, n]) => s + n, 0);
+  const maxPrize     = prizeEntries.length ? prizeEntries[0][1] : 1;
+  const listEl       = document.getElementById('stat-prizes-list');
+  const metaEl       = document.getElementById('stat-prizes-meta');
+  const tauxEl       = document.getElementById('stat-taux');
+  const tauxNumEl    = document.getElementById('stat-taux-num');
+
   if (prizeEntries.length === 0) {
-    listEl.innerHTML = '<span class="stat-empty">Aucun cadeau distribué</span>';
+    listEl.innerHTML   = '<span class="stat-empty">Aucun cadeau distribué</span>';
+    metaEl.textContent = '';
+    tauxEl.style.display = 'none';
   } else {
-    listEl.innerHTML = prizeEntries.map(([label, n]) =>
-      `<div class="stat-prize-row"><span>${label}</span><span class="stat-prize-count">${n}</span></div>`
-    ).join('');
+    metaEl.textContent = `${totalPrizes} distribué${totalPrizes > 1 ? 's' : ''}`;
+    listEl.innerHTML = prizeEntries.map(([label, n]) => {
+      const barPct = Math.round(n / maxPrize * 100);
+      const pct    = total > 0 ? Math.round(n / totalPrizes * 100) : 0;
+      return `<div class="stat-prize-row">
+        <span>${label}</span>
+        <div class="stat-prize-bar-track"><div class="stat-prize-bar-fill" style="width:${barPct}%"></div></div>
+        <span class="stat-prize-count">${n}</span>
+        <span class="stat-prize-pct">${pct}%</span>
+      </div>`;
+    }).join('');
+
+    const taux = total > 0 ? Math.round(totalPrizes / total * 100) : 0;
+    tauxNumEl.textContent  = `${taux}%`;
+    tauxEl.style.display   = 'flex';
   }
 }
