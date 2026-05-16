@@ -11,6 +11,7 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 const CONFIG_COL = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
 const CONFIG_DOC = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
+const AVIS_COL   = (typeof CONFIG !== 'undefined') ? CONFIG.AVIS_COLLECTION      : 'avis';
 const CONFIG_REF = db.collection(CONFIG_COL).doc(CONFIG_DOC);
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -58,20 +59,30 @@ function messageForError(code) {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-let unsubscribe = null;
+let unsubscribe     = null;
+let unsubscribeAvis = null;
 
 function showLogin() {
   document.getElementById('login-section').style.display    = 'flex';
   document.getElementById('dashboard-section').style.display = 'none';
   document.getElementById('login-btn').disabled = false;
   document.getElementById('login-btn').textContent = 'Se connecter';
-  if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+  if (unsubscribe)     { unsubscribe();     unsubscribe     = null; }
+  if (unsubscribeAvis) { unsubscribeAvis(); unsubscribeAvis = null; }
 }
 
 function showDashboard(user) {
   document.getElementById('login-section').style.display    = 'none';
   document.getElementById('dashboard-section').style.display = 'flex';
   document.getElementById('user-info').textContent = user.email;
+
+  unsubscribeAvis = db.collection(AVIS_COL)
+    .orderBy('timestamp', 'desc')
+    .onSnapshot(snapshot => {
+      updateStats(snapshot.docs.map(d => d.data()));
+    }, () => {
+      document.getElementById('stat-total').textContent = '–';
+    });
 
   unsubscribe = CONFIG_REF.onSnapshot(doc => {
     const data = doc.exists ? doc.data() : {};
@@ -138,4 +149,37 @@ function setStatusLine(text, duration) {
   el.textContent = text;
   clearTimeout(statusTimer);
   statusTimer = setTimeout(() => { el.textContent = ''; }, duration);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+
+function updateStats(avis) {
+  const total   = avis.length;
+  const byStars = { 1: 0, 2: 0, 3: 0, 4: 0 };
+  const byPrize = {};
+
+  avis.forEach(a => {
+    const s = a.stars;
+    if (s >= 1 && s <= 4) byStars[s]++;
+    if (a.prize) byPrize[a.prize] = (byPrize[a.prize] || 0) + 1;
+  });
+
+  document.getElementById('stat-total').textContent = total;
+
+  const maxStars = Math.max(...Object.values(byStars), 1);
+  [1, 2, 3, 4].forEach(s => {
+    const n = byStars[s];
+    document.getElementById(`count-${s}`).textContent = n;
+    document.getElementById(`bar-${s}`).style.width   = `${Math.round(n / maxStars * 100)}%`;
+  });
+
+  const prizeEntries = Object.entries(byPrize).sort((a, b) => b[1] - a[1]);
+  const listEl = document.getElementById('stat-prizes-list');
+  if (prizeEntries.length === 0) {
+    listEl.innerHTML = '<span class="stat-empty">Aucun cadeau distribué</span>';
+  } else {
+    listEl.innerHTML = prizeEntries.map(([label, n]) =>
+      `<div class="stat-prize-row"><span>${label}</span><span class="stat-prize-count">${n}</span></div>`
+    ).join('');
+  }
 }

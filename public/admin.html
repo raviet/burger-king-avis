@@ -190,6 +190,83 @@
       color: rgba(80,35,20,.5);
       text-align: center;
     }
+
+    /* ── Stats ── */
+    .stats-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .stat-total-wrap {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .stat-total-num {
+      font-family: 'Lilita One', cursive;
+      font-size: 2.6rem;
+      color: var(--red);
+      line-height: 1;
+    }
+    .stat-total-label {
+      font-weight: 700;
+      font-size: .9rem;
+      color: var(--brown);
+    }
+    .stat-stars {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .stat-star-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .85rem;
+      font-weight: 700;
+    }
+    .stat-star-label { color: var(--brown); width: 22px; flex-shrink: 0; }
+    .stat-bar-track {
+      flex: 1;
+      height: 10px;
+      background: rgba(80,35,20,.12);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      background: var(--orange);
+      border-radius: 99px;
+      transition: width .4s ease;
+    }
+    .stat-star-count { color: rgba(80,35,20,.55); width: 28px; text-align: right; flex-shrink: 0; }
+    .stat-prizes-title {
+      font-family: 'Lilita One', cursive;
+      font-size: .9rem;
+      color: var(--brown);
+    }
+    .stat-prize-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .82rem;
+      font-weight: 700;
+      color: var(--brown);
+      padding: 3px 0;
+    }
+    .stat-prize-count {
+      background: var(--red);
+      color: #fff;
+      border-radius: 99px;
+      padding: 1px 9px;
+      font-size: .78rem;
+    }
+    .stat-empty {
+      font-size: .82rem;
+      color: rgba(80,35,20,.4);
+      font-style: italic;
+    }
   </style>
 </head>
 <body>
@@ -243,6 +320,43 @@
     </div>
 
     <p class="status-line" id="status-line"></p>
+    <hr class="divider" />
+
+    <div class="stats-section" id="stats-section">
+      <div class="stat-total-wrap">
+        <span class="stat-total-num" id="stat-total">–</span>
+        <span class="stat-total-label">avis reçus</span>
+      </div>
+
+      <div class="stat-stars" id="stat-stars">
+        <div class="stat-star-row">
+          <span class="stat-star-label">4★</span>
+          <div class="stat-bar-track"><div class="stat-bar-fill" id="bar-4" style="width:0%"></div></div>
+          <span class="stat-star-count" id="count-4">–</span>
+        </div>
+        <div class="stat-star-row">
+          <span class="stat-star-label">3★</span>
+          <div class="stat-bar-track"><div class="stat-bar-fill" id="bar-3" style="width:0%"></div></div>
+          <span class="stat-star-count" id="count-3">–</span>
+        </div>
+        <div class="stat-star-row">
+          <span class="stat-star-label">2★</span>
+          <div class="stat-bar-track"><div class="stat-bar-fill" id="bar-2" style="width:0%"></div></div>
+          <span class="stat-star-count" id="count-2">–</span>
+        </div>
+        <div class="stat-star-row">
+          <span class="stat-star-label">1★</span>
+          <div class="stat-bar-track"><div class="stat-bar-fill" id="bar-1" style="width:0%"></div></div>
+          <span class="stat-star-count" id="count-1">–</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="stat-prizes-title">Produits gagnés</div>
+        <div id="stat-prizes-list"><span class="stat-empty">Aucun avis encore</span></div>
+      </div>
+    </div>
+
     <hr class="divider" />
     <p class="user-info" id="user-info"></p>
     <button class="btn btn-sm" id="logout-btn">Se déconnecter</button>
