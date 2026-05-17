@@ -284,9 +284,9 @@ function drawTemporalChart(avis) {
     // Label (every 2 days to avoid crowding)
     if (i % 2 === 0) {
       ctx.fillStyle = 'rgba(80,35,20,.4)';
-      ctx.font      = `600 ${Math.max(8, Math.round(barW * 1.1))}px Nunito, sans-serif`;
+      ctx.font      = '600 9px Nunito, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(b.label, x + barW / 2, H);
+      ctx.fillText(b.label, x + barW / 2, H - 2);
     }
   });
 }
