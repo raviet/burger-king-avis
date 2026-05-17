@@ -311,6 +311,34 @@
       color: rgba(80,35,20,.4);
       font-style: italic;
     }
+
+    /* ── Graphique temporel ── */
+    .chart-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chart-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+    .chart-title {
+      font-family: 'Lilita One', cursive;
+      font-size: .9rem;
+      color: var(--brown);
+    }
+    .chart-meta {
+      font-size: .75rem;
+      font-weight: 700;
+      color: rgba(80,35,20,.45);
+    }
+    #temporal-chart {
+      width: 100%;
+      height: 80px;
+      display: block;
+    }
   </style>
 </head>
 <body>
@@ -405,6 +433,14 @@
           <span class="stat-taux-num" id="stat-taux-num">–</span>
           <span>taux roulette</span>
         </div>
+      </div>
+
+      <div class="chart-wrap">
+        <div class="chart-header">
+          <div class="chart-title">14 derniers jours</div>
+          <div class="chart-meta" id="chart-meta"></div>
+        </div>
+        <canvas id="temporal-chart"></canvas>
       </div>
     </div>
 

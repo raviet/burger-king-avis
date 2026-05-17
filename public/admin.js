@@ -202,4 +202,97 @@ function updateStats(avis) {
     tauxNumEl.textContent  = `${taux}%`;
     tauxEl.style.display   = 'flex';
   }
+
+  drawTemporalChart(avis);
+}
+
+// ── Graphique temporel ────────────────────────────────────────────────────────
+
+function drawTemporalChart(avis) {
+  const DAYS    = 14;
+  const canvas  = document.getElementById('temporal-chart');
+  const dpr     = window.devicePixelRatio || 1;
+  const cssW    = canvas.clientWidth || 320;
+  const cssH    = 80;
+
+  canvas.width  = cssW * dpr;
+  canvas.height = cssH * dpr;
+  canvas.style.height = cssH + 'px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const W = cssW;
+  const H = cssH;
+
+  // Build last DAYS buckets (day keys: "YYYY-MM-DD")
+  const today   = new Date();
+  const buckets = [];
+  for (let i = DAYS - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    buckets.push({
+      key:   dayKey(d),
+      label: d.getDate() + '/' + String(d.getMonth() + 1).padStart(2, '0'),
+      count: 0,
+    });
+  }
+
+  const bucketMap = {};
+  buckets.forEach(b => { bucketMap[b.key] = b; });
+
+  avis.forEach(a => {
+    if (!a.timestamp) return;
+    const d  = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+    const k  = dayKey(d);
+    if (bucketMap[k]) bucketMap[k].count++;
+  });
+
+  const maxCount = Math.max(...buckets.map(b => b.count), 1);
+  const recentTotal = buckets.reduce((s, b) => s + b.count, 0);
+
+  document.getElementById('chart-meta').textContent =
+    recentTotal > 0 ? `${recentTotal} avis` : 'Aucun avis';
+
+  // Layout
+  const LABEL_H  = 18;
+  const BAR_AREA = H - LABEL_H - 4;
+  const GAP      = 3;
+  const barW     = (W - GAP * (DAYS - 1)) / DAYS;
+
+  ctx.clearRect(0, 0, W, H);
+
+  buckets.forEach((b, i) => {
+    const x      = i * (barW + GAP);
+    const fillH  = b.count > 0 ? Math.max(4, Math.round(b.count / maxCount * BAR_AREA)) : 2;
+    const y      = BAR_AREA - fillH + 2;
+    const radius = Math.min(3, barW / 2);
+
+    // Bar
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + barW - radius, y);
+    ctx.quadraticCurveTo(x + barW, y, x + barW, y + radius);
+    ctx.lineTo(x + barW, y + fillH);
+    ctx.lineTo(x, y + fillH);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.fillStyle = b.count > 0 ? '#FF8732' : 'rgba(80,35,20,.1)';
+    ctx.fill();
+
+    // Label (every 2 days to avoid crowding)
+    if (i % 2 === 0) {
+      ctx.fillStyle = 'rgba(80,35,20,.4)';
+      ctx.font      = `600 ${Math.max(8, Math.round(barW * 1.1))}px Nunito, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.fillText(b.label, x + barW / 2, H);
+    }
+  });
+}
+
+function dayKey(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
 }
