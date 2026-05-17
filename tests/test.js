@@ -572,6 +572,205 @@ test('resolveCooldownsCollection(undefined) → "cooldowns" (fallback prod)', ()
 test('cooldowns dev/prod pointent sur collections différentes', () =>
   assert.notStrictEqual(resolveCooldownsCollection(DEV_CONFIG), resolveCooldownsCollection(PROD_CONFIG)));
 
+// ─── 17. Vue liste avis (avis.js) ────────────────────────────────────────────
+
+console.log('\n17. Vue liste avis');
+
+function renderStars(n) {
+  const filled = '★'.repeat(Math.max(0, Math.min(5, n)));
+  const empty  = '☆'.repeat(Math.max(0, 5 - n));
+  return `<span style="color:#FFAA00">${filled}</span><span style="color:rgba(80,35,20,.25)">${empty}</span>`;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function filterAvis(avis, filter) {
+  return filter === 'all' ? avis : avis.filter(a => String(a.stars) === filter);
+}
+
+const SAMPLE_AVIS = [
+  { stars: 4, message: 'Très bon !',   prize: 'Cheeseburger' },
+  { stars: 3, message: 'Correct.',     prize: null },
+  { stars: 1, message: 'Mauvais <b>', prize: null },
+  { stars: 4, message: 'Super &',      prize: '4 Nuggets' },
+  { stars: 2, message: 'Bof.',         prize: null },
+];
+
+// renderStars
+test('renderStars(4) → 4 étoiles pleines + 1 vide', () => {
+  const r = renderStars(4);
+  assert(r.includes('★★★★') && r.includes('☆'));
+});
+test('renderStars(5) → 5 étoiles pleines, 0 vide', () => {
+  const r = renderStars(5);
+  assert(r.includes('★★★★★') && !r.includes('☆'));
+});
+test('renderStars(1) → 1 pleine + 4 vides', () => {
+  const r = renderStars(1);
+  assert(r.includes('★') && r.includes('☆☆☆☆'));
+});
+test('renderStars(0) → aucune étoile pleine', () => {
+  assert(!renderStars(0).includes('★'));
+});
+test('renderStars(-1) → clamp 0, aucune pleine', () => {
+  assert(!renderStars(-1).includes('★'));
+});
+test('renderStars(6) → clamp 5, 5 pleines', () => {
+  assert(renderStars(6).includes('★★★★★'));
+});
+
+// escapeHtml
+test('escapeHtml — < et > échappés', () => {
+  assert.strictEqual(escapeHtml('<script>'), '&lt;script&gt;');
+});
+test('escapeHtml — & échappé', () => {
+  assert.strictEqual(escapeHtml('BK & Co'), 'BK &amp; Co');
+});
+test('escapeHtml — " échappé', () => {
+  assert.strictEqual(escapeHtml('"bonjour"'), '&quot;bonjour&quot;');
+});
+test('escapeHtml — texte sans spéciaux → inchangé', () => {
+  assert.strictEqual(escapeHtml('Burger King'), 'Burger King');
+});
+test('escapeHtml — XSS complet neutralisé', () => {
+  const out = escapeHtml('<img src="x" onerror="alert(1)">');
+  assert(out.includes('&lt;img') && !out.includes('<img'));
+});
+
+// filterAvis
+test('filterAvis "all" → retourne tout', () => {
+  assert.strictEqual(filterAvis(SAMPLE_AVIS, 'all').length, SAMPLE_AVIS.length);
+});
+test('filterAvis "4" → seulement les 4★', () => {
+  const r = filterAvis(SAMPLE_AVIS, '4');
+  assert(r.every(a => a.stars === 4));
+  assert.strictEqual(r.length, 2);
+});
+test('filterAvis "1" → seulement les 1★', () => {
+  const r = filterAvis(SAMPLE_AVIS, '1');
+  assert.strictEqual(r.length, 1);
+  assert.strictEqual(r[0].stars, 1);
+});
+test('filterAvis "5" → résultat vide (pas de 5★)', () => {
+  assert.strictEqual(filterAvis(SAMPLE_AVIS, '5').length, 0);
+});
+test('filterAvis conserve les propriétés des avis', () => {
+  const r = filterAvis(SAMPLE_AVIS, '4');
+  assert(r.every(a => 'message' in a && 'stars' in a));
+});
+
+// ─── 18. Graphique temporel ───────────────────────────────────────────────────
+
+console.log('\n18. Graphique temporel');
+
+function dayKey(d) {
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+function buildBuckets(nDays, refDate) {
+  const buckets = [];
+  for (let i = nDays - 1; i >= 0; i--) {
+    const d = new Date(refDate);
+    d.setDate(refDate.getDate() - i);
+    buckets.push({ key: dayKey(d), count: 0 });
+  }
+  return buckets;
+}
+
+function aggregateCounts(avis, buckets) {
+  const map = {};
+  buckets.forEach(b => { map[b.key] = b; });
+  avis.forEach(a => {
+    if (!a.timestamp) return;
+    const d = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+    const k = dayKey(d);
+    if (map[k]) map[k].count++;
+  });
+  return buckets;
+}
+
+const REF_DATE  = new Date('2026-05-17T12:00:00Z');
+const BUCKETS14 = buildBuckets(14, REF_DATE);
+
+// dayKey
+test('dayKey → format YYYY-MM-DD', () => {
+  assert.strictEqual(dayKey(new Date('2026-05-17T00:00:00')), '2026-05-17');
+});
+test('dayKey — zéros de remplissage mois et jour', () => {
+  assert.strictEqual(dayKey(new Date('2026-01-04T00:00:00')), '2026-01-04');
+});
+test('dayKey — décembre', () => {
+  assert.strictEqual(dayKey(new Date('2026-12-31T00:00:00')), '2026-12-31');
+});
+
+// buildBuckets
+test('buildBuckets(14) → 14 buckets', () => {
+  assert.strictEqual(BUCKETS14.length, 14);
+});
+test('buildBuckets — dernier bucket = refDate', () => {
+  assert.strictEqual(BUCKETS14[13].key, '2026-05-17');
+});
+test('buildBuckets — premier bucket = refDate - 13 jours', () => {
+  assert.strictEqual(BUCKETS14[0].key, '2026-05-04');
+});
+test('buildBuckets — tous les counts initialisés à 0', () => {
+  assert(BUCKETS14.every(b => b.count === 0));
+});
+test('buildBuckets — clés toutes distinctes', () => {
+  const keys = BUCKETS14.map(b => b.key);
+  assert.strictEqual(new Set(keys).size, 14);
+});
+
+// aggregateCounts
+test('aggregateCounts — avis dans la fenêtre incrémente le bon bucket', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  const avis = [{ timestamp: { toDate: () => new Date('2026-05-10T10:00:00Z') } }];
+  aggregateCounts(avis, buckets);
+  const b = buckets.find(b => b.key === '2026-05-10');
+  assert.strictEqual(b.count, 1);
+});
+test('aggregateCounts — avis hors fenêtre ignoré', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  const avis = [{ timestamp: { toDate: () => new Date('2026-04-01T10:00:00Z') } }];
+  aggregateCounts(avis, buckets);
+  assert(buckets.every(b => b.count === 0));
+});
+test('aggregateCounts — avis sans timestamp ignoré', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  aggregateCounts([{ stars: 3 }], buckets);
+  assert(buckets.every(b => b.count === 0));
+});
+test('aggregateCounts — plusieurs avis même jour cumulés', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  const avis = [
+    { timestamp: { toDate: () => new Date('2026-05-15T08:00:00Z') } },
+    { timestamp: { toDate: () => new Date('2026-05-15T20:00:00Z') } },
+    { timestamp: { toDate: () => new Date('2026-05-15T14:00:00Z') } },
+  ];
+  aggregateCounts(avis, buckets);
+  const b = buckets.find(b => b.key === '2026-05-15');
+  assert.strictEqual(b.count, 3);
+});
+test('aggregateCounts — total avis = somme des counts', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  const avis = [
+    { timestamp: { toDate: () => new Date('2026-05-10T10:00:00Z') } },
+    { timestamp: { toDate: () => new Date('2026-05-12T10:00:00Z') } },
+    { timestamp: { toDate: () => new Date('2026-05-14T10:00:00Z') } },
+  ];
+  aggregateCounts(avis, buckets);
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+  assert.strictEqual(total, 3);
+});
+
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(45)}`);
