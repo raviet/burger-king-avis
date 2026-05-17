@@ -16,6 +16,8 @@ parent: "[[BurgerKingAvis/spec]]"
 - [ ] Icône "Add to Home Screen" : se renseigner sur `apple-touch-icon` + PWA manifest pour afficher icône BK quand ajouté à l'écran d'accueil iPhone/Android
 
 ## Fait
+
+### 2026-05-14
 - [x] Créé projet `~/Projet/burger-king-avis` + git init + GitHub repo
 - [x] Généré via `/ultraplan` : structure complète HTML/CSS/JS
 - [x] Configuré URL Google Avis dans `script.js`
@@ -23,6 +25,8 @@ parent: "[[BurgerKingAvis/spec]]"
 - [x] Firebase Hosting : projet `burger-king-avis` créé + déployé → https://burger-king-avis.web.app
 - [x] Web3Forms confirmé fonctionnel (mail reçu ✅)
 - [x] Restructuré repo → `public/` pour fichiers statiques + hook post-commit → `BurgerKingAvisGit.md`
+
+### 2026-05-15
 - [x] Roulette canvas après envoi avis (session iPhone) — 5 prizes, spin, prize reveal
 - [x] Images produits BK dans roulette (photos officielles, fond transparent, autocrop)
 - [x] 5ème prize "Pâtisserie" ajouté
@@ -35,6 +39,8 @@ parent: "[[BurgerKingAvis/spec]]"
 - [x] Fond page dégradé BK sunset (dark → red → orange → yellow → cream)
 - [x] Étoiles interactives feedback.html (selectedStars 1-5, 5★ → email)
 - [x] Fix scroll horizontal mobile (overflow-x: hidden)
+
+### 2026-05-16
 - [x] Dashboard admin `admin.html` + `admin.js` (Firebase Auth + toggle roulette)
 - [x] Firestore `config/settings { roulette_enabled }` + rules (read public, write auth)
 - [x] `feedback.js` lecture config Firestore + branche roulette vs merci simple
@@ -54,3 +60,10 @@ parent: "[[BurgerKingAvis/spec]]"
 - [x] Dashboard stats temps réel : total avis, barres par note 4★→1★
 - [x] Analyse prizes : barre + count + % par cadeau + taux roulette global
 - [x] 102 tests, 0 échec
+
+### 2026-05-17
+- [x] Anti-abus cooldown 24h : `generateId()` UUID v4 persistent `localStorage.bk_client_id`, cooldown via `localStorage.bk_last_submit`, écriture `cooldowns/{clientId}` Firestore + vérification rules
+- [x] Isolation cooldowns par env : `COOLDOWNS_COLLECTION` dans `config/dev.js` (`cooldowns-dev`) et `config/prod.js` (`cooldowns`)
+- [x] Page `/avis` : liste protégée Firebase Auth, filtres ★ client-side, cards avec badge 🎁, temps réel `onSnapshot`
+- [x] Graphique temporel dashboard : canvas bar chart 14j glissants, barres orange BK, fix font labels 9px fixe
+- [x] 147 tests, 0 échec
