@@ -8,7 +8,7 @@ node tests/test.js
 
 Aucune dépendance externe requise. Node.js suffit (module natif `assert`).
 
-Résultat attendu : **102 tests réussis, 0 échec.**
+Résultat attendu : **147 tests réussis, 0 échec.**
 
 ---
 

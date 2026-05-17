@@ -148,6 +148,26 @@ finalAngle = startAngle - delta - extraTurns
 
 ---
 
+### 8. Anti-abus cooldown 24h
+
+**Décision :** Double protection contre les soumissions multiples. (1) UUID persistent `bk_client_id` en localStorage inclus dans chaque doc Firestore. (2) `bk_last_submit` timestamp → cooldown 24h côté client → section "Déjà envoyé !". (3) Collection Firestore `cooldowns/{clientId}` → rule `get()` bloque `avis create` côté serveur si cooldown actif. `?reset` URL param pour bypass en dev.
+
+**Collections isolées par env :** `cooldowns` (prod) / `cooldowns-dev` (dev). `COOLDOWNS_COLLECTION` dans `config/dev.js` et `config/prod.js`.
+
+---
+
+### 9. Page liste avis (/avis)
+
+**Décision :** `avis.html` + `avis.js` protégée par Firebase Auth. Redirect `/admin` si non connecté. `onSnapshot` temps réel. Filtres côté client (Tous/4★/3★/2★/1★). Cards avec `escapeHtml` sur les messages (XSS). Lien depuis dashboard admin.
+
+---
+
+### 10. Graphique temporel 14 jours
+
+**Décision :** Bar chart Canvas natif dans le dashboard, 14 jours glissants. Barres orange BK, labels 9px fixe j/mm tous les 2 jours. Pas de librairie externe — Canvas cohérent avec la roulette.
+
+---
+
 ## Configuration à personnaliser
 
 ### URL Google Reviews
@@ -212,13 +232,15 @@ burger-king-avis/
 │   ├── script.js         ← logique de redirection selon la note
 │   ├── feedback.html     ← formulaire de feedback (1-4 étoiles)
 │   ├── feedback.js       ← soumission email + roulette + config Firestore
-│   ├── admin.html        ← dashboard admin (login + toggles)
-│   ├── admin.js          ← Firebase Auth + Firestore onSnapshot + toggles
+│   ├── admin.html        ← dashboard admin (login + toggles + stats + graphique)
+│   ├── admin.js          ← Firebase Auth + Firestore onSnapshot + toggles + graphique temporel
+│   ├── avis.html         ← liste avis (auth requise)
+│   ├── avis.js           ← liste avis + filtres + onSnapshot
 │   ├── style.css         ← styles partagés (thème BK)
 │   ├── 404.html          ← page d'erreur personnalisée
 │   └── images/           ← photos des cadeaux roulette (.png)
 └── tests/
-    └── test.js           ← 92 tests (Node.js natif)
+    └── test.js           ← 147 tests (Node.js natif)
 ```
 
 ---
