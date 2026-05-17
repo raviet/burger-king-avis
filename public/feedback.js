@@ -40,7 +40,8 @@ let rouletteEnabled = true;
 let emailEnabled = true;
 const CONFIG_COL  = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
 const CONFIG_DOC  = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
-const AVIS_COL    = (typeof CONFIG !== 'undefined') ? CONFIG.AVIS_COLLECTION      : 'avis';
+const AVIS_COL      = (typeof CONFIG !== 'undefined') ? CONFIG.AVIS_COLLECTION      : 'avis';
+const COOLDOWNS_COL = (typeof CONFIG !== 'undefined') ? CONFIG.COOLDOWNS_COLLECTION : 'cooldowns';
 let   avisRef     = null;
 const configPromise = db.collection(CONFIG_COL).doc(CONFIG_DOC).get()
   .then(doc => {
@@ -128,7 +129,7 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
     });
 
     localStorage.setItem('bk_last_submit', Date.now());
-    db.collection('cooldowns').doc(clientId).set({
+    db.collection(COOLDOWNS_COL).doc(clientId).set({
       lastSubmit: firebase.firestore.FieldValue.serverTimestamp(),
     }).catch(() => {});
 

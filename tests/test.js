@@ -347,20 +347,20 @@ test('les deux OFF simultanément', () => {
 
 console.log('\n13. Config environnements (dev / prod)');
 
-const DEV_CONFIG  = { ENV: 'dev',  WEB3FORMS_KEY: '39c512ae-ad7f-4a07-8b89-474adc23c163', GOOGLE_REVIEWS_URL: '#',        FIRESTORE_COLLECTION: 'config-dev', FIRESTORE_CONFIG_DOC: 'settings', AVIS_COLLECTION: 'avis-dev' };
-const PROD_CONFIG = { ENV: 'prod', WEB3FORMS_KEY: '854bf41c-060a-420a-948b-6961027f7f63', GOOGLE_REVIEWS_URL: 'https://www.google.com/maps/place/Burger+King/@48.8203079,2.6217964,15z/data=!4m8!3m7!1s0x47e60fd6c70c054d:0xe65143e7bc07dd47!8m2!3d48.8224029!4d2.6165143!9m1!1b1!16s%2Fg%2F11xmf5xbvs?entry=ttu&g_ep=EgoyMDI2MDUxMi4wIKXMDSoASAFQAw%3D%3D', FIRESTORE_COLLECTION: 'config',     FIRESTORE_CONFIG_DOC: 'settings', AVIS_COLLECTION: 'avis' };
+const DEV_CONFIG  = { ENV: 'dev',  WEB3FORMS_KEY: '39c512ae-ad7f-4a07-8b89-474adc23c163', GOOGLE_REVIEWS_URL: '#',        FIRESTORE_COLLECTION: 'config-dev', FIRESTORE_CONFIG_DOC: 'settings', AVIS_COLLECTION: 'avis-dev', COOLDOWNS_COLLECTION: 'cooldowns-dev' };
+const PROD_CONFIG = { ENV: 'prod', WEB3FORMS_KEY: '854bf41c-060a-420a-948b-6961027f7f63', GOOGLE_REVIEWS_URL: 'https://www.google.com/maps/place/Burger+King/@48.8203079,2.6217964,15z/data=!4m8!3m7!1s0x47e60fd6c70c054d:0xe65143e7bc07dd47!8m2!3d48.8224029!4d2.6165143!9m1!1b1!16s%2Fg%2F11xmf5xbvs?entry=ttu&g_ep=EgoyMDI2MDUxMi4wIKXMDSoASAFQAw%3D%3D', FIRESTORE_COLLECTION: 'config',     FIRESTORE_CONFIG_DOC: 'settings', AVIS_COLLECTION: 'avis',     COOLDOWNS_COLLECTION: 'cooldowns' };
 
 function resolveKey(cfg)      { return (typeof cfg !== 'undefined') ? cfg.WEB3FORMS_KEY    : ''; }
 function resolveGoogleUrl(cfg){ return (typeof cfg !== 'undefined') ? cfg.GOOGLE_REVIEWS_URL : '#'; }
 function showDevBanner(cfg)   { return typeof cfg !== 'undefined' && cfg.ENV === 'dev'; }
 
-const REQUIRED_FIELDS = ['ENV', 'WEB3FORMS_KEY', 'GOOGLE_REVIEWS_URL', 'FIRESTORE_COLLECTION', 'FIRESTORE_CONFIG_DOC', 'AVIS_COLLECTION'];
+const REQUIRED_FIELDS = ['ENV', 'WEB3FORMS_KEY', 'GOOGLE_REVIEWS_URL', 'FIRESTORE_COLLECTION', 'FIRESTORE_CONFIG_DOC', 'AVIS_COLLECTION', 'COOLDOWNS_COLLECTION'];
 
 // Structure
-test('dev : 6 champs requis présents', () => {
+test('dev : 7 champs requis présents', () => {
   REQUIRED_FIELDS.forEach(k => assert(k in DEV_CONFIG, `dev manque ${k}`));
 });
-test('prod : 6 champs requis présents', () => {
+test('prod : 7 champs requis présents', () => {
   REQUIRED_FIELDS.forEach(k => assert(k in PROD_CONFIG, `prod manque ${k}`));
 });
 
@@ -449,6 +449,14 @@ test('prod.AVIS_COLLECTION = "avis"', () =>
   assert.strictEqual(PROD_CONFIG.AVIS_COLLECTION, 'avis'));
 test('avis dev et prod isolées', () =>
   assert.notStrictEqual(DEV_CONFIG.AVIS_COLLECTION, PROD_CONFIG.AVIS_COLLECTION));
+
+// COOLDOWNS_COLLECTION
+test('dev.COOLDOWNS_COLLECTION = "cooldowns-dev"', () =>
+  assert.strictEqual(DEV_CONFIG.COOLDOWNS_COLLECTION, 'cooldowns-dev'));
+test('prod.COOLDOWNS_COLLECTION = "cooldowns"', () =>
+  assert.strictEqual(PROD_CONFIG.COOLDOWNS_COLLECTION, 'cooldowns'));
+test('cooldowns dev et prod isolées', () =>
+  assert.notStrictEqual(DEV_CONFIG.COOLDOWNS_COLLECTION, PROD_CONFIG.COOLDOWNS_COLLECTION));
 
 // ─── 15. Payload avis Firestore ───────────────────────────────────────────────
 
@@ -550,6 +558,19 @@ test('clientId dans payload est bien le UUID généré', () => {
   const p  = buildAvisPayloadWithClient(2, 'msg', id);
   assert.match(p.clientId, UUID_RE);
 });
+
+function resolveCooldownsCollection(cfg) {
+  return (typeof cfg !== 'undefined') ? cfg.COOLDOWNS_COLLECTION : 'cooldowns';
+}
+
+test('resolveCooldownsCollection(dev) → "cooldowns-dev"', () =>
+  assert.strictEqual(resolveCooldownsCollection(DEV_CONFIG), 'cooldowns-dev'));
+test('resolveCooldownsCollection(prod) → "cooldowns"', () =>
+  assert.strictEqual(resolveCooldownsCollection(PROD_CONFIG), 'cooldowns'));
+test('resolveCooldownsCollection(undefined) → "cooldowns" (fallback prod)', () =>
+  assert.strictEqual(resolveCooldownsCollection(undefined), 'cooldowns'));
+test('cooldowns dev/prod pointent sur collections différentes', () =>
+  assert.notStrictEqual(resolveCooldownsCollection(DEV_CONFIG), resolveCooldownsCollection(PROD_CONFIG)));
 
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 

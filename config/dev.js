@@ -4,7 +4,8 @@ const CONFIG = {
   GOOGLE_REVIEWS_URL: '#',
   FIRESTORE_COLLECTION: 'config-dev',
   FIRESTORE_CONFIG_DOC: 'settings',
-  AVIS_COLLECTION: 'avis-dev',
+  AVIS_COLLECTION:      'avis-dev',
+  COOLDOWNS_COLLECTION: 'cooldowns-dev',
 };
 
 (function() {
