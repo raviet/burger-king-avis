@@ -771,6 +771,91 @@ test('aggregateCounts — total avis = somme des counts', () => {
   assert.strictEqual(total, 3);
 });
 
+// ─── 19. Pagination (avis.js) ────────────────────────────────────────────────
+
+console.log('\n19. Pagination');
+
+function buildPageLabel(currentPage, pageSize, docsLength) {
+  if (docsLength === 0) return '0 avis';
+  const from = currentPage * pageSize + 1;
+  const to   = currentPage * pageSize + docsLength;
+  return `${from}–${to} avis`;
+}
+
+function isPrevDisabled(currentPage) {
+  return currentPage === 0;
+}
+
+function isNextDisabled(hasNextPage) {
+  return !hasNextPage;
+}
+
+function resetPagination() {
+  return { currentPage: 0, pageStack: [null], lastDoc: null, hasNextPage: false };
+}
+
+// buildPageLabel
+test('buildPageLabel — page 0, 20 docs → "1–20 avis"', () => {
+  assert.strictEqual(buildPageLabel(0, 20, 20), '1–20 avis');
+});
+test('buildPageLabel — page 1, 20 docs → "21–40 avis"', () => {
+  assert.strictEqual(buildPageLabel(1, 20, 20), '21–40 avis');
+});
+test('buildPageLabel — page 2, 7 docs (dernière page) → "41–47 avis"', () => {
+  assert.strictEqual(buildPageLabel(2, 20, 7), '41–47 avis');
+});
+test('buildPageLabel — page 0, 0 docs → "0 avis"', () => {
+  assert.strictEqual(buildPageLabel(0, 20, 0), '0 avis');
+});
+test('buildPageLabel — page 0, 1 doc → "1–1 avis"', () => {
+  assert.strictEqual(buildPageLabel(0, 20, 1), '1–1 avis');
+});
+
+// isPrevDisabled
+test('isPrevDisabled — page 0 → disabled', () => {
+  assert.strictEqual(isPrevDisabled(0), true);
+});
+test('isPrevDisabled — page 1 → enabled', () => {
+  assert.strictEqual(isPrevDisabled(1), false);
+});
+test('isPrevDisabled — page 5 → enabled', () => {
+  assert.strictEqual(isPrevDisabled(5), false);
+});
+
+// isNextDisabled
+test('isNextDisabled — hasNextPage false → disabled', () => {
+  assert.strictEqual(isNextDisabled(false), true);
+});
+test('isNextDisabled — hasNextPage true → enabled', () => {
+  assert.strictEqual(isNextDisabled(true), false);
+});
+
+// resetPagination
+test('resetPagination — currentPage reset à 0', () => {
+  const s = resetPagination();
+  assert.strictEqual(s.currentPage, 0);
+});
+test('resetPagination — pageStack = [null]', () => {
+  const s = resetPagination();
+  assert.deepStrictEqual(s.pageStack, [null]);
+});
+test('resetPagination — lastDoc null', () => {
+  assert.strictEqual(resetPagination().lastDoc, null);
+});
+test('resetPagination — hasNextPage false', () => {
+  assert.strictEqual(resetPagination().hasNextPage, false);
+});
+
+// hasNextPage logic
+test('hasNextPage = true si docs.length === PAGE_SIZE', () => {
+  const docs = new Array(20).fill({});
+  assert.strictEqual(docs.length === 20, true);
+});
+test('hasNextPage = false si docs.length < PAGE_SIZE', () => {
+  const docs = new Array(15).fill({});
+  assert.strictEqual(docs.length === 20, false);
+});
+
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(45)}`);

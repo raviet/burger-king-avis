@@ -11,54 +11,103 @@ const auth    = firebase.auth();
 const db      = firebase.firestore();
 const AVIS_COL = (typeof CONFIG !== 'undefined') ? CONFIG.AVIS_COLLECTION : 'avis';
 
-let allAvis       = [];
-let activeFilter  = 'all';
-let unsubscribe   = null;
+const PAGE_SIZE = 20;
+let currentPage = 0;
+let pageStack   = [null]; // pageStack[i] = first doc of page i, null = beginning
+let lastDoc     = null;
+let hasNextPage = false;
+let activeFilter = 'all';
 
 auth.onAuthStateChanged(user => {
-  if (!user) {
-    window.location.href = '/admin';
-    return;
-  }
+  if (!user) { window.location.href = '/admin'; return; }
   document.getElementById('avis-section').style.display = 'flex';
-  startListening();
+  loadPage(0);
 });
 
-function startListening() {
-  unsubscribe = db.collection(AVIS_COL)
-    .orderBy('timestamp', 'desc')
-    .onSnapshot(snapshot => {
-      allAvis = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-      render();
-    }, () => {
-      document.getElementById('loading-state').textContent = 'Erreur de chargement.';
-    });
+function buildQuery() {
+  if (activeFilter === 'all') {
+    return db.collection(AVIS_COL).orderBy('timestamp', 'desc');
+  }
+  return db.collection(AVIS_COL)
+    .where('stars', '==', parseInt(activeFilter, 10))
+    .orderBy('timestamp', 'desc');
 }
 
-function render() {
-  const filtered = activeFilter === 'all'
-    ? allAvis
-    : allAvis.filter(a => String(a.stars) === activeFilter);
+async function loadPage(pageIndex) {
+  showLoading();
+  try {
+    let q = buildQuery();
+    const startDoc = pageStack[pageIndex];
+    if (startDoc) q = q.startAt(startDoc);
+    q = q.limit(PAGE_SIZE);
 
+    const snap = await q.get();
+    const docs = snap.docs;
+
+    lastDoc     = docs.length > 0 ? docs[docs.length - 1] : null;
+    hasNextPage = docs.length === PAGE_SIZE;
+    currentPage = pageIndex;
+
+    renderDocs(docs);
+    updatePagination();
+  } catch (e) {
+    const el = document.getElementById('loading-state');
+    el.textContent = 'Erreur de chargement.';
+    el.style.display = 'block';
+  }
+}
+
+async function goNext() {
+  if (!hasNextPage || !lastDoc) return;
+  const nextIndex = currentPage + 1;
+  showLoading();
+  try {
+    const snap = await buildQuery().startAfter(lastDoc).limit(PAGE_SIZE).get();
+    const docs = snap.docs;
+
+    if (!pageStack[nextIndex] && docs.length > 0) {
+      pageStack[nextIndex] = docs[0];
+    }
+
+    lastDoc     = docs.length > 0 ? docs[docs.length - 1] : null;
+    hasNextPage = docs.length === PAGE_SIZE;
+    currentPage = nextIndex;
+
+    renderDocs(docs);
+    updatePagination();
+  } catch (e) {
+    document.getElementById('loading-state').textContent = 'Erreur de chargement.';
+  }
+}
+
+function showLoading() {
   const loadingEl = document.getElementById('loading-state');
-  const countEl   = document.getElementById('avis-count');
-  const listEl    = document.getElementById('avis-list');
+  loadingEl.textContent = 'Chargement…';
+  loadingEl.style.display = 'block';
+  document.getElementById('avis-count').style.display = 'none';
+  document.getElementById('avis-list').innerHTML = '';
+  document.getElementById('pagination').style.display = 'none';
+}
 
-  loadingEl.style.display = 'none';
-  countEl.style.display   = 'block';
+function renderDocs(docs) {
+  document.getElementById('loading-state').style.display = 'none';
 
-  const total     = allAvis.length;
-  const displayed = filtered.length;
-  countEl.textContent = activeFilter === 'all'
-    ? `${total} avis`
-    : `${displayed} avis sur ${total}`;
+  const countEl = document.getElementById('avis-count');
+  countEl.style.display = 'block';
 
-  if (filtered.length === 0) {
-    listEl.innerHTML = '<div class="empty-state">Aucun avis pour ce filtre.</div>';
+  if (docs.length === 0) {
+    countEl.textContent = '0 avis';
+    document.getElementById('avis-list').innerHTML =
+      '<div class="empty-state">Aucun avis pour ce filtre.</div>';
     return;
   }
 
-  listEl.innerHTML = filtered.map(a => {
+  const from = currentPage * PAGE_SIZE + 1;
+  const to   = currentPage * PAGE_SIZE + docs.length;
+  countEl.textContent = hasNextPage ? `${from}–${to} avis` : `${from}–${to} avis`;
+
+  document.getElementById('avis-list').innerHTML = docs.map(d => {
+    const a       = { id: d.id, ...d.data() };
     const stars   = renderStars(a.stars || 0);
     const date    = formatDate(a.timestamp);
     const message = escapeHtml(a.message || '');
@@ -75,6 +124,23 @@ function render() {
         ${prize}
       </div>`;
   }).join('');
+}
+
+function updatePagination() {
+  const pag      = document.getElementById('pagination');
+  const prevBtn  = document.getElementById('btn-prev');
+  const nextBtn  = document.getElementById('btn-next');
+  const pageInfo = document.getElementById('page-info');
+
+  if (currentPage === 0 && !hasNextPage) {
+    pag.style.display = 'none';
+    return;
+  }
+
+  pag.style.display = 'flex';
+  prevBtn.disabled  = currentPage === 0;
+  nextBtn.disabled  = !hasNextPage;
+  pageInfo.textContent = `Page ${currentPage + 1}`;
 }
 
 function renderStars(n) {
@@ -105,5 +171,15 @@ document.getElementById('filters').addEventListener('click', e => {
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   activeFilter = btn.dataset.filter;
-  render();
+  currentPage  = 0;
+  pageStack    = [null];
+  lastDoc      = null;
+  hasNextPage  = false;
+  loadPage(0);
 });
+
+document.getElementById('btn-prev').addEventListener('click', () => {
+  if (currentPage > 0) loadPage(currentPage - 1);
+});
+
+document.getElementById('btn-next').addEventListener('click', goNext);

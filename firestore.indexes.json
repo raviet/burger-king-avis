@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "avis",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "stars",     "order": "ASCENDING"  },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "avis-dev",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "stars",     "order": "ASCENDING"  },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
