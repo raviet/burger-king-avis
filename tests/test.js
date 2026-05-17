@@ -492,6 +492,65 @@ test('resolveAvisCollection(undefined) → "avis" (fallback prod)', () =>
 test('collections avis dev et prod distinctes', () =>
   assert.notStrictEqual(resolveAvisCollection(DEV_CONFIG), resolveAvisCollection(PROD_CONFIG)));
 
+// ─── 16. Anti-abus (cooldown + clientId) ─────────────────────────────────────
+
+console.log('\n16. Anti-abus');
+
+function generateId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+function checkCooldown(lastSubmitMs, nowMs = Date.now()) {
+  const COOLDOWN_MS = 24 * 60 * 60 * 1000;
+  return nowMs - lastSubmitMs < COOLDOWN_MS;
+}
+
+function buildAvisPayloadWithClient(stars, message, clientId) {
+  return { stars, message, clientId };
+}
+
+test('generateId() → UUID v4 format', () => {
+  const id = generateId();
+  assert.match(id, UUID_RE);
+});
+test('generateId() → IDs distincts à chaque appel', () => {
+  assert.notStrictEqual(generateId(), generateId());
+});
+test('cooldown actif si lastSubmit < 24h', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - 3600 * 1000, now), true);
+});
+test('cooldown inactif si lastSubmit = 0 (jamais soumis)', () => {
+  assert.strictEqual(checkCooldown(0, Date.now()), false);
+});
+test('cooldown inactif si lastSubmit > 24h', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - 25 * 3600 * 1000, now), false);
+});
+test('cooldown actif à 23h59 passé', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - (24 * 3600 * 1000 - 60000), now), true);
+});
+test('cooldown inactif exactement à 24h passé', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - 24 * 3600 * 1000, now), false);
+});
+test('payload avis inclut clientId', () => {
+  const id = generateId();
+  const p  = buildAvisPayloadWithClient(3, 'Test', id);
+  assert.strictEqual(p.clientId, id);
+});
+test('clientId dans payload est bien le UUID généré', () => {
+  const id = generateId();
+  const p  = buildAvisPayloadWithClient(2, 'msg', id);
+  assert.match(p.clientId, UUID_RE);
+});
+
 // ─── Résumé ───────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(45)}`);

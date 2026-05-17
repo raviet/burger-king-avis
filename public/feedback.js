@@ -1,5 +1,31 @@
 const WEB3FORMS_KEY = (typeof CONFIG !== 'undefined') ? CONFIG.WEB3FORMS_KEY : '';
 
+function generateId() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+if (new URLSearchParams(window.location.search).has('reset')) {
+  localStorage.removeItem('bk_last_submit');
+}
+
+const clientId = localStorage.getItem('bk_client_id') || (() => {
+  const id = generateId();
+  localStorage.setItem('bk_client_id', id);
+  return id;
+})();
+
+const COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const lastSubmit  = parseInt(localStorage.getItem('bk_last_submit') || '0', 10);
+const onCooldown  = Date.now() - lastSubmit < COOLDOWN_MS;
+
+if (onCooldown) {
+  document.getElementById('form-section').style.display    = 'none';
+  document.getElementById('already-section').style.display = 'flex';
+}
+
 firebase.initializeApp({
   apiKey:            'AIzaSyBcHaY5Zdy6pLqq1PxYcMSMr-NqCOCvhj4',
   authDomain:        'burger-king-avis.firebaseapp.com',
@@ -98,7 +124,13 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
       stars:     selectedStars,
       message:   message,
       timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      clientId:  clientId,
     });
+
+    localStorage.setItem('bk_last_submit', Date.now());
+    db.collection('cooldowns').doc(clientId).set({
+      lastSubmit: firebase.firestore.FieldValue.serverTimestamp(),
+    }).catch(() => {});
 
     if (emailEnabled) {
       const res = await fetch('https://api.web3forms.com/submit', {
