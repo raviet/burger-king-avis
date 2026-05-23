@@ -147,8 +147,9 @@ function updatePagination() {
 }
 
 function renderStars(n) {
-  const filled = '★'.repeat(Math.max(0, Math.min(5, n)));
-  const empty  = '☆'.repeat(Math.max(0, 5 - n));
+  const clamped = Math.max(0, Math.min(5, isFinite(n) ? n : 0));
+  const filled  = '★'.repeat(clamped);
+  const empty   = '☆'.repeat(5 - clamped);
   return `<span style="color:#FFAA00">${filled}</span><span style="color:rgba(80,35,20,.25)">${empty}</span>`;
 }
 

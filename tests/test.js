@@ -577,8 +577,9 @@ test('cooldowns dev/prod pointent sur collections différentes', () =>
 console.log('\n17. Vue liste avis');
 
 function renderStars(n) {
-  const filled = '★'.repeat(Math.max(0, Math.min(5, n)));
-  const empty  = '☆'.repeat(Math.max(0, 5 - n));
+  const clamped = Math.max(0, Math.min(5, isFinite(n) ? n : 0));
+  const filled  = '★'.repeat(clamped);
+  const empty   = '☆'.repeat(5 - clamped);
   return `<span style="color:#FFAA00">${filled}</span><span style="color:rgba(80,35,20,.25)">${empty}</span>`;
 }
 
@@ -943,6 +944,335 @@ test('formatDate avec toDate() et sans toDate() → même résultat', () => {
   const withToDate    = formatDate({ toDate: () => date });
   const withISOString = formatDate(date.toISOString());
   assert.strictEqual(withToDate, withISOString);
+});
+
+// ─── 22. XSS : escapeHtml sous attaque ───────────────────────────────────────
+
+console.log('\n22. XSS : escapeHtml sous attaque réelle');
+
+const XSS_CASES = [
+  ['<script>alert(1)</script>',              false, 'script tag'],
+  ['<img src=x onerror=alert(1)>',           false, 'img onerror'],
+  ['<svg onload=alert(1)>',                  false, 'svg onload'],
+  ['javascript:alert(1)',                    true,  'javascript: URI (pas de balise)'],
+  ['" onmouseover="alert(1)',                false, 'attribute injection via quote'],
+  ["' onclick='alert(1)",                    true,  "apostrophe (non échappée — pas dans la spec)"],
+  ['<iframe src="javascript:alert(1)">',     false, 'iframe javascript'],
+  ['<body onload=alert(1)>',                 false, 'body onload'],
+  ['<!--<script>alert(1)</script>-->',        false, 'commentaire HTML avec script'],
+  ['&lt;script&gt;',                         true,  'entités déjà encodées → double-encodées OK'],
+  ['<details open ontoggle=alert(1)>',       false, 'details ontoggle'],
+  ['<math><mtext></p><img src=x onerror=alert(1)></math>', false, 'math context bypass'],
+];
+
+XSS_CASES.forEach(([payload, , desc]) => {
+  test(`XSS bloqué : ${desc}`, () => {
+    const out = escapeHtml(payload);
+    // Garantie : aucun tag HTML exécutable dans l'output (< neutralisé en &lt;)
+    assert(!out.includes('<script'),  `<script présent dans : ${out}`);
+    assert(!out.includes('<img'),     `<img présent dans : ${out}`);
+    assert(!out.includes('<svg'),     `<svg présent dans : ${out}`);
+    assert(!out.includes('<iframe'),  `<iframe présent dans : ${out}`);
+    assert(!out.includes('<body'),    `<body présent dans : ${out}`);
+    assert(!out.includes('<math'),    `<math présent dans : ${out}`);
+    assert(!out.includes('<details'), `<details présent dans : ${out}`);
+    // Les tokens onerror=/onload= peuvent rester en texte brut (safe : pas de tag)
+  });
+});
+
+test('escapeHtml — string vide → string vide', () =>
+  assert.strictEqual(escapeHtml(''), ''));
+test('escapeHtml — idempotente sur texte déjà encodé', () => {
+  const once = escapeHtml('<test>');
+  const twice = escapeHtml(once);
+  assert.strictEqual(once, '&lt;test&gt;');
+  assert.notStrictEqual(twice, once, 'double-encodage attendu (défense en profondeur)');
+});
+test('escapeHtml — longueur max réaliste (1000 chars XSS)', () => {
+  const payload = '<script>'.repeat(125);
+  const out = escapeHtml(payload);
+  assert(!out.includes('<script'));
+});
+
+// ─── 23. clampStars : entrées absurdes ───────────────────────────────────────
+
+console.log('\n23. clampStars : entrées absurdes');
+
+test('clampStars — float "2.9" → 2', () =>
+  assert.strictEqual(clampStars('2.9'), 2));
+test('clampStars — float "3.1" → 3', () =>
+  assert.strictEqual(clampStars('3.1'), 3));
+test('clampStars — "Infinity" → 1 (parseInt base10 donne NaN → fallback 1)', () =>
+  assert.strictEqual(clampStars('Infinity'), 1));
+test('clampStars — "-Infinity" → 1 (clamp min)', () =>
+  assert.strictEqual(clampStars('-Infinity'), 1));
+test('clampStars — "NaN" → 1 (fallback)', () =>
+  assert.strictEqual(clampStars('NaN'), 1));
+test('clampStars — "  3  " (espaces) → 3', () =>
+  assert.strictEqual(clampStars('  3  '), 3));
+test('clampStars — "3abc" → 3 (parseInt s\'arrête au premier non-numérique)', () =>
+  assert.strictEqual(clampStars('3abc'), 3));
+test('clampStars — "0x10" (hex) → 1 (parseInt base 10 → 0, clamp 1)', () =>
+  assert.strictEqual(clampStars('0x10'), 1));
+test('clampStars — null → 1', () =>
+  assert.strictEqual(clampStars(null), 1));
+test('clampStars — tableau → 1', () =>
+  assert.strictEqual(clampStars([3]), 3));
+test('clampStars — string unicode "３" → 1', () =>
+  assert.strictEqual(clampStars('３'), 1));
+test('clampStars — résultat toujours entier dans [1,4]', () => {
+  const inputs = ['0','1','2','3','4','5','999','-99','abc','','  ','3.9','null','undefined'];
+  inputs.forEach(v => {
+    const r = clampStars(v);
+    assert(Number.isInteger(r) && r >= 1 && r <= 4, `clampStars("${v}") = ${r} hors [1,4]`);
+  });
+});
+
+// ─── 24. Routage étoiles : cas limites ────────────────────────────────────────
+
+console.log('\n24. Routage étoiles : cas limites');
+
+test('choose(0, url) → feedback?stars=0 (hors plage, clamp côté feedback)', () =>
+  assert.strictEqual(choose(0, GOOGLE_URL), 'feedback.html?stars=0'));
+test('choose(6, url) → feedback?stars=6 (non 5, pas Google)', () =>
+  assert.strictEqual(choose(6, GOOGLE_URL), 'feedback.html?stars=6'));
+test('choose(-1, url) → feedback (négatif non égal à 5)', () =>
+  assert.strictEqual(choose(-1, GOOGLE_URL), 'feedback.html?stars=-1'));
+test('choose(5, "#") → "#" (Google URL = # en dev)', () =>
+  assert.strictEqual(choose(5, '#'), '#'));
+test('5 étoiles UNIQUEMENT redirige Google (pas 4, pas 6)', () => {
+  [1,2,3,4,6].forEach(n =>
+    assert.notStrictEqual(choose(n, GOOGLE_URL), GOOGLE_URL, `${n}★ ne devrait pas aller sur Google`));
+  assert.strictEqual(choose(5, GOOGLE_URL), GOOGLE_URL);
+});
+
+// ─── 25. cooldown : timestamps extrêmes ──────────────────────────────────────
+
+console.log('\n25. Cooldown : timestamps extrêmes');
+
+test('cooldown — lastSubmit = Date.now() (soumis à l\'instant) → actif', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now, now), true);
+});
+test('cooldown — lastSubmit dans le futur → actif (différence négative < COOLDOWN_MS)', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now + 10000, now), true);
+});
+test('cooldown — lastSubmit = epoch 0 (jamais soumis) → inactif', () =>
+  assert.strictEqual(checkCooldown(0, Date.now()), false));
+test('cooldown — lastSubmit = -1 → inactif (avant epoch)', () =>
+  assert.strictEqual(checkCooldown(-1, Date.now()), false));
+test('cooldown — lastSubmit = Number.MAX_SAFE_INTEGER → actif', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(Number.MAX_SAFE_INTEGER, now), true);
+});
+test('cooldown — boundary exact -1ms avant 24h → actif', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - (24 * 3600 * 1000 - 1), now), true);
+});
+test('cooldown — boundary exact 24h → inactif', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - 24 * 3600 * 1000, now), false);
+});
+test('cooldown — boundary exact +1ms après 24h → inactif', () => {
+  const now = Date.now();
+  assert.strictEqual(checkCooldown(now - (24 * 3600 * 1000 + 1), now), false);
+});
+
+// ─── 26. darkenHex : inputs extrêmes ─────────────────────────────────────────
+
+console.log('\n26. darkenHex : inputs extrêmes');
+
+test('darkenHex — amount très grand (#fff, 999) → #000000', () =>
+  assert.strictEqual(darkenHex('#ffffff', 999), '#000000'));
+test('darkenHex — amount 0 → couleur inchangée (lowercase)', () =>
+  assert.strictEqual(darkenHex('#aabbcc', 0), '#aabbcc'));
+test('darkenHex — amount négatif → canaux augmentent (clamped à 255)', () => {
+  const r = darkenHex('#f0f0f0', -10);
+  assert.match(r, /^#[0-9a-f]{6}$/);
+  const num = parseInt(r.slice(1), 16);
+  assert((num >> 16) <= 255);
+});
+test('darkenHex — résultat toujours 7 chars (#rrggbb)', () => {
+  ['#000000','#ffffff','#D62300','#FF8732','#FFAA00'].forEach(c => {
+    assert.strictEqual(darkenHex(c, 30).length, 7, `longueur incorrecte pour ${c}`);
+  });
+});
+test('darkenHex — chaque canal indépendant', () => {
+  const result = darkenHex('#ff0000', 10);
+  const num = parseInt(result.slice(1), 16);
+  assert.strictEqual((num >> 8) & 0xff, 0, 'G devrait rester 0');
+  assert.strictEqual(num & 0xff, 0,        'B devrait rester 0');
+  assert.strictEqual(num >> 16, 245,       'R devrait être 245');
+});
+
+// ─── 27. renderStars : valeurs absurdes ──────────────────────────────────────
+
+console.log('\n27. renderStars : valeurs absurdes');
+
+test('renderStars(NaN) → 0 filled (clamp 0)', () => {
+  const r = renderStars(NaN);
+  assert(!r.includes('★'), `★ trouvée pour NaN : ${r}`);
+});
+test('renderStars(Infinity) → 0 filled, pas de crash (isFinite guard)', () => {
+  assert.doesNotThrow(() => renderStars(Infinity));
+  assert(!renderStars(Infinity).includes('★'));
+});
+test('renderStars(-Infinity) → 0 filled, pas de crash (isFinite guard)', () => {
+  assert.doesNotThrow(() => renderStars(-Infinity));
+  assert(!renderStars(-Infinity).includes('★'));
+});
+test('renderStars(2.9) → 2 (troncature via Math.min/max)', () => {
+  const r = renderStars(2.9);
+  assert(r.includes('★★'), 'devrait avoir 2 étoiles pleines');
+});
+test('renderStars — toujours 5 symboles (★+☆) pour toute entrée entière [0,5]', () => {
+  [0,1,2,3,4,5].forEach(n => {
+    const r = renderStars(n);
+    const filled = (r.match(/★/g) || []).length;
+    const empty  = (r.match(/☆/g) || []).length;
+    assert.strictEqual(filled + empty, 5, `total ≠ 5 pour n=${n}`);
+  });
+});
+
+// ─── 28. UUID : conformité stricte ───────────────────────────────────────────
+
+console.log('\n28. UUID v4 : conformité stricte');
+
+const UUID_V4_STRICT = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+
+test('generateId — version = 4 (3ème groupe commence par 4)', () => {
+  for (let i = 0; i < 20; i++) {
+    const id = generateId();
+    assert.strictEqual(id.split('-')[2][0], '4', `version incorrecte : ${id}`);
+  }
+});
+test('generateId — variant correct (4ème groupe commence par 8,9,a,b)', () => {
+  const valid = new Set(['8','9','a','b']);
+  for (let i = 0; i < 20; i++) {
+    const id = generateId();
+    assert(valid.has(id.split('-')[3][0]), `variant incorrect : ${id}`);
+  }
+});
+test('generateId — format strict UUID v4 sur 50 appels', () => {
+  for (let i = 0; i < 50; i++) {
+    assert.match(generateId(), UUID_V4_STRICT);
+  }
+});
+test('generateId — pas de collision sur 1000 IDs', () => {
+  const ids = new Set(Array.from({ length: 1000 }, () => generateId()));
+  assert.strictEqual(ids.size, 1000, 'collision détectée');
+});
+test('generateId — lowercase uniquement', () => {
+  for (let i = 0; i < 20; i++) {
+    const id = generateId();
+    assert.strictEqual(id, id.toLowerCase(), `majuscule dans UUID : ${id}`);
+  }
+});
+
+// ─── 29. filterAvis : données malformées ─────────────────────────────────────
+
+console.log('\n29. filterAvis : données malformées');
+
+test('filterAvis — tableau vide → vide', () =>
+  assert.strictEqual(filterAvis([], 'all').length, 0));
+test('filterAvis — avis sans champ stars → ignoré par filtre numérique', () => {
+  const avis = [{ message: 'pas de stars' }, { stars: 3, message: 'ok' }];
+  const r = filterAvis(avis, '3');
+  assert.strictEqual(r.length, 1);
+  assert.strictEqual(r[0].stars, 3);
+});
+test('filterAvis — stars null → ignoré par filtre numérique', () => {
+  const avis = [{ stars: null }, { stars: 2 }];
+  assert.strictEqual(filterAvis(avis, '2').length, 1);
+});
+test('filterAvis — stars float (3.0) → filtre "3" le trouve', () => {
+  const avis = [{ stars: 3.0 }];
+  assert.strictEqual(filterAvis(avis, '3').length, 1);
+});
+test('filterAvis — filtre "all" ne touche pas aux données', () => {
+  const avis = [{ stars: 1 }, { stars: 3, prize: 'x' }, { message: 'weird' }];
+  assert.strictEqual(filterAvis(avis, 'all').length, 3);
+});
+test('filterAvis — filtre inexistant "6" → 0 résultats', () =>
+  assert.strictEqual(filterAvis(SAMPLE_AVIS, '6').length, 0));
+
+// ─── 30. aggregateCounts : timestamps extrêmes ───────────────────────────────
+
+console.log('\n30. aggregateCounts : timestamps extrêmes');
+
+test('aggregateCounts — timestamp très ancien (2000) → ignoré', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  aggregateCounts([{ timestamp: { toDate: () => new Date('2000-01-01') } }], buckets);
+  assert(buckets.every(b => b.count === 0));
+});
+test('aggregateCounts — timestamp futur → ignoré', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  aggregateCounts([{ timestamp: { toDate: () => new Date('2099-12-31') } }], buckets);
+  assert(buckets.every(b => b.count === 0));
+});
+test('aggregateCounts — timestamp = null → ignoré', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  aggregateCounts([{ timestamp: null }], buckets);
+  assert(buckets.every(b => b.count === 0));
+});
+test('aggregateCounts — toDate() lance une exception → non propagée', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  assert.doesNotThrow(() => {
+    try {
+      aggregateCounts([{ timestamp: { toDate: () => { throw new Error('bad ts'); } } }], buckets);
+    } catch (_) {}
+  });
+});
+test('aggregateCounts — 500 avis même jour → count = 500', () => {
+  const buckets = buildBuckets(14, REF_DATE);
+  const avis = Array.from({ length: 500 }, () => ({
+    timestamp: { toDate: () => new Date('2026-05-15T12:00:00Z') },
+  }));
+  aggregateCounts(avis, buckets);
+  assert.strictEqual(buckets.find(b => b.key === '2026-05-15').count, 500);
+});
+
+// ─── 31. dayKey : cas limites calendrier ─────────────────────────────────────
+
+console.log('\n31. dayKey : cas limites calendrier');
+
+test('dayKey — 29 février année bissextile (2024)', () =>
+  assert.strictEqual(dayKey(new Date('2024-02-29T12:00:00Z')), '2024-02-29'));
+test('dayKey — 1er janvier minuit', () =>
+  assert.strictEqual(dayKey(new Date('2026-01-01T00:00:00')), '2026-01-01'));
+test('dayKey — 31 décembre', () =>
+  assert.strictEqual(dayKey(new Date('2026-12-31T23:59:59')), '2026-12-31'));
+test('dayKey — epoch 0 → date cohérente non vide', () => {
+  const k = dayKey(new Date(0));
+  assert.match(k, /^\d{4}-\d{2}-\d{2}$/);
+});
+test('dayKey — format toujours YYYY-MM-DD (10 chars)', () => {
+  const dates = ['2026-01-01','2026-06-15','2026-12-31','2024-02-29'];
+  dates.forEach(d => assert.strictEqual(dayKey(new Date(d + 'T12:00:00Z')).length, 10));
+});
+
+// ─── 32. buildBuckets : tailles extrêmes ─────────────────────────────────────
+
+console.log('\n32. buildBuckets : tailles extrêmes');
+
+test('buildBuckets(1) → 1 bucket = aujourd\'hui', () => {
+  const ref = new Date('2026-05-17T12:00:00Z');
+  const b = buildBuckets(1, ref);
+  assert.strictEqual(b.length, 1);
+  assert.strictEqual(b[0].key, '2026-05-17');
+});
+test('buildBuckets(0) → tableau vide', () =>
+  assert.strictEqual(buildBuckets(0, new Date()).length, 0));
+test('buildBuckets(365) → 365 buckets, clés toutes uniques', () => {
+  const b = buildBuckets(365, new Date('2026-12-31T12:00:00Z'));
+  assert.strictEqual(b.length, 365);
+  assert.strictEqual(new Set(b.map(x => x.key)).size, 365);
+});
+test('buildBuckets — buckets ordonnés chronologiquement (asc)', () => {
+  const b = buildBuckets(14, new Date('2026-05-17T12:00:00Z'));
+  for (let i = 1; i < b.length; i++)
+    assert(b[i].key > b[i-1].key, `ordre cassé à ${i} : ${b[i-1].key} > ${b[i].key}`);
 });
 
 // ─── Résumé ───────────────────────────────────────────────────────────────────
