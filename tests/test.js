@@ -846,14 +846,103 @@ test('resetPagination — hasNextPage false', () => {
   assert.strictEqual(resetPagination().hasNextPage, false);
 });
 
-// hasNextPage logic
-test('hasNextPage = true si docs.length === PAGE_SIZE', () => {
+// hasNextPage logic (limit+1 : on fetch PAGE_SIZE+1, hasNextPage = docs.length > PAGE_SIZE)
+test('hasNextPage = true si on reçoit PAGE_SIZE+1 docs (il en reste)', () => {
+  const docs = new Array(21).fill({});
+  assert.strictEqual(docs.length > 20, true);
+});
+test('hasNextPage = false si on reçoit exactement PAGE_SIZE docs (dernière page)', () => {
   const docs = new Array(20).fill({});
-  assert.strictEqual(docs.length === 20, true);
+  assert.strictEqual(docs.length > 20, false);
 });
 test('hasNextPage = false si docs.length < PAGE_SIZE', () => {
   const docs = new Array(15).fill({});
-  assert.strictEqual(docs.length === 20, false);
+  assert.strictEqual(docs.length > 20, false);
+});
+
+// ─── 20. Pagination limit+1 : slice et hasNextPage ───────────────────────────
+
+console.log('\n20. Pagination limit+1 (slice displayDocs)');
+
+const PAGE_SIZE = 20;
+
+function applyLimitPlusOne(rawDocs) {
+  const hasNextPage  = rawDocs.length > PAGE_SIZE;
+  const displayDocs  = rawDocs.slice(0, PAGE_SIZE);
+  const lastDoc      = displayDocs.length > 0 ? displayDocs[displayDocs.length - 1] : null;
+  return { hasNextPage, displayDocs, lastDoc };
+}
+
+test('21 docs → hasNextPage true, displayDocs.length = 20', () => {
+  const raw = Array.from({ length: 21 }, (_, i) => ({ id: i }));
+  const { hasNextPage, displayDocs } = applyLimitPlusOne(raw);
+  assert.strictEqual(hasNextPage, true);
+  assert.strictEqual(displayDocs.length, 20);
+});
+test('20 docs → hasNextPage false (dernière page exacte)', () => {
+  const raw = Array.from({ length: 20 }, (_, i) => ({ id: i }));
+  const { hasNextPage, displayDocs } = applyLimitPlusOne(raw);
+  assert.strictEqual(hasNextPage, false);
+  assert.strictEqual(displayDocs.length, 20);
+});
+test('7 docs → hasNextPage false, displayDocs.length = 7', () => {
+  const raw = Array.from({ length: 7 }, (_, i) => ({ id: i }));
+  const { hasNextPage, displayDocs } = applyLimitPlusOne(raw);
+  assert.strictEqual(hasNextPage, false);
+  assert.strictEqual(displayDocs.length, 7);
+});
+test('0 docs → hasNextPage false, lastDoc null', () => {
+  const { hasNextPage, lastDoc } = applyLimitPlusOne([]);
+  assert.strictEqual(hasNextPage, false);
+  assert.strictEqual(lastDoc, null);
+});
+test('21ème doc ne fait pas partie de displayDocs', () => {
+  const raw = Array.from({ length: 21 }, (_, i) => ({ id: i }));
+  const { displayDocs } = applyLimitPlusOne(raw);
+  assert(!displayDocs.find(d => d.id === 20), 'doc id=20 ne devrait pas être affiché');
+});
+test('lastDoc = 20ème doc (index 19) quand 21 docs', () => {
+  const raw = Array.from({ length: 21 }, (_, i) => ({ id: i }));
+  const { lastDoc } = applyLimitPlusOne(raw);
+  assert.strictEqual(lastDoc.id, 19);
+});
+test('page 1 : labels corrects avec displayDocs.length', () => {
+  const raw = Array.from({ length: 21 }, (_, i) => ({ id: i }));
+  const { displayDocs } = applyLimitPlusOne(raw);
+  const label = buildPageLabel(1, PAGE_SIZE, displayDocs.length);
+  assert.strictEqual(label, '21–40 avis');
+});
+
+// ─── 21. formatDate (avis.js) ─────────────────────────────────────────────────
+
+console.log('\n21. formatDate');
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('fr-FR', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+}
+
+test('formatDate null → chaîne vide', () =>
+  assert.strictEqual(formatDate(null), ''));
+test('formatDate undefined → chaîne vide', () =>
+  assert.strictEqual(formatDate(undefined), ''));
+test('formatDate timestamp objet {toDate()} → string non vide', () => {
+  const ts = { toDate: () => new Date('2026-05-17T10:30:00Z') };
+  const r = formatDate(ts);
+  assert(r.length > 0, 'résultat vide');
+});
+test('formatDate Date ISO string → string non vide', () => {
+  const r = formatDate('2026-05-17T10:30:00Z');
+  assert(r.length > 0, 'résultat vide');
+});
+test('formatDate avec toDate() et sans toDate() → même résultat', () => {
+  const date = new Date('2026-05-17T10:30:00.000Z');
+  const withToDate    = formatDate({ toDate: () => date });
+  const withISOString = formatDate(date.toISOString());
+  assert.strictEqual(withToDate, withISOString);
 });
 
 // ─── Résumé ───────────────────────────────────────────────────────────────────
