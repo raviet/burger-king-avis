@@ -19,6 +19,12 @@ service cloud.firestore {
     }
     match /avis/{doc} {
       allow create: if request.resource.data.clientId is string
+                    && request.resource.data.stars   is int
+                    && request.resource.data.stars   >= 1
+                    && request.resource.data.stars   <= 4
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() >= 1
+                    && request.resource.data.message.size() <= 2000
                     && (
                       !exists(/databases/$(database)/documents/cooldowns/$(request.resource.data.clientId))
                       || get(/databases/$(database)/documents/cooldowns/$(request.resource.data.clientId)).data.lastSubmit < request.time - duration.value(1, 'd')
@@ -29,6 +35,12 @@ service cloud.firestore {
     }
     match /avis-dev/{doc} {
       allow create: if request.resource.data.clientId is string
+                    && request.resource.data.stars   is int
+                    && request.resource.data.stars   >= 1
+                    && request.resource.data.stars   <= 4
+                    && request.resource.data.message is string
+                    && request.resource.data.message.size() >= 1
+                    && request.resource.data.message.size() <= 2000
                     && (
                       !exists(/databases/$(database)/documents/cooldowns-dev/$(request.resource.data.clientId))
                       || get(/databases/$(database)/documents/cooldowns-dev/$(request.resource.data.clientId)).data.lastSubmit < request.time - duration.value(1, 'd')

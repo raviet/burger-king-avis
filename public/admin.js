@@ -30,6 +30,11 @@ document.getElementById('login-btn').addEventListener('click', async () => {
   const errEl    = document.getElementById('login-error');
   const btn      = document.getElementById('login-btn');
 
+  if (!email || !password) {
+    errEl.textContent = 'Veuillez saisir votre email et votre mot de passe.';
+    return;
+  }
+
   errEl.textContent = '';
   btn.disabled = true;
   btn.textContent = 'Connexion…';
