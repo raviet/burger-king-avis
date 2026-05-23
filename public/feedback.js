@@ -64,7 +64,7 @@ const feedbackHint  = document.getElementById('feedback-stars-hint');
 
 function highlightFeedbackStars(upTo) {
   feedbackStars.forEach(s => {
-    s.classList.toggle('hovered', parseInt(s.dataset.value) <= upTo);
+    s.classList.toggle('hovered', parseInt(s.dataset.value, 10) <= upTo);
   });
 }
 
