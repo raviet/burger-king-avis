@@ -76,8 +76,13 @@ function showDashboard(user) {
   document.getElementById('dashboard-section').style.display = 'flex';
   document.getElementById('user-info').textContent = user.email;
 
+  db.collection(AVIS_COL).count().get()
+    .then(snap => { document.getElementById('stat-total').textContent = snap.data().count; })
+    .catch(() => {});
+
   unsubscribeAvis = db.collection(AVIS_COL)
     .orderBy('timestamp', 'desc')
+    .limit(500)
     .onSnapshot(snapshot => {
       updateStats(snapshot.docs.map(d => d.data()));
     }, () => {
@@ -163,8 +168,6 @@ function updateStats(avis) {
     if (s >= 1 && s <= 4) byStars[s]++;
     if (a.prize) byPrize[a.prize] = (byPrize[a.prize] || 0) + 1;
   });
-
-  document.getElementById('stat-total').textContent = total;
 
   const maxStars = Math.max(...Object.values(byStars), 1);
   [1, 2, 3, 4].forEach(s => {

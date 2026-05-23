@@ -39,16 +39,17 @@ async function loadPage(pageIndex) {
     let q = buildQuery();
     const startDoc = pageStack[pageIndex];
     if (startDoc) q = q.startAt(startDoc);
-    q = q.limit(PAGE_SIZE);
+    q = q.limit(PAGE_SIZE + 1);
 
     const snap = await q.get();
     const docs = snap.docs;
 
-    lastDoc     = docs.length > 0 ? docs[docs.length - 1] : null;
-    hasNextPage = docs.length === PAGE_SIZE;
-    currentPage = pageIndex;
+    hasNextPage      = docs.length > PAGE_SIZE;
+    const displayDocs = docs.slice(0, PAGE_SIZE);
+    lastDoc          = displayDocs.length > 0 ? displayDocs[displayDocs.length - 1] : null;
+    currentPage      = pageIndex;
 
-    renderDocs(docs);
+    renderDocs(displayDocs);
     updatePagination();
   } catch (e) {
     const el = document.getElementById('loading-state');
@@ -62,18 +63,20 @@ async function goNext() {
   const nextIndex = currentPage + 1;
   showLoading();
   try {
-    const snap = await buildQuery().startAfter(lastDoc).limit(PAGE_SIZE).get();
+    const snap = await buildQuery().startAfter(lastDoc).limit(PAGE_SIZE + 1).get();
     const docs = snap.docs;
 
-    if (!pageStack[nextIndex] && docs.length > 0) {
-      pageStack[nextIndex] = docs[0];
+    hasNextPage       = docs.length > PAGE_SIZE;
+    const displayDocs  = docs.slice(0, PAGE_SIZE);
+
+    if (!pageStack[nextIndex] && displayDocs.length > 0) {
+      pageStack[nextIndex] = displayDocs[0];
     }
 
-    lastDoc     = docs.length > 0 ? docs[docs.length - 1] : null;
-    hasNextPage = docs.length === PAGE_SIZE;
+    lastDoc     = displayDocs.length > 0 ? displayDocs[displayDocs.length - 1] : null;
     currentPage = nextIndex;
 
-    renderDocs(docs);
+    renderDocs(displayDocs);
     updatePagination();
   } catch (e) {
     document.getElementById('loading-state').textContent = 'Erreur de chargement.';
@@ -104,7 +107,7 @@ function renderDocs(docs) {
 
   const from = currentPage * PAGE_SIZE + 1;
   const to   = currentPage * PAGE_SIZE + docs.length;
-  countEl.textContent = hasNextPage ? `${from}–${to} avis` : `${from}–${to} avis`;
+  countEl.textContent = `${from}–${to} avis`;
 
   document.getElementById('avis-list').innerHTML = docs.map(d => {
     const a       = { id: d.id, ...d.data() };

@@ -75,7 +75,7 @@ function selectFeedbackStars(value) {
 }
 
 feedbackStars.forEach(star => {
-  const value = parseInt(star.dataset.value);
+  const value = parseInt(star.dataset.value, 10);
   star.addEventListener('mouseenter', () => {
     highlightFeedbackStars(value);
     feedbackHint.textContent = value + '/5 – ' + starLabels[value];
@@ -93,12 +93,6 @@ feedbackStars.forEach(star => {
 selectFeedbackStars(stars);
 
 const DEBUG = new URLSearchParams(window.location.search).has('debug');
-
-if (DEBUG) {
-  document.getElementById('form-section').style.display     = 'none';
-  document.getElementById('roulette-section').style.display = 'flex';
-  drawWheel(currentAngle);
-}
 
 document.getElementById('feedback-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -133,8 +127,18 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
       lastSubmit: firebase.firestore.FieldValue.serverTimestamp(),
     }).catch(() => {});
 
+    // Firestore = source de vérité → succès immédiat
+    document.getElementById('form-section').style.display = 'none';
+    if (rouletteEnabled) {
+      document.getElementById('roulette-section').style.display = 'flex';
+      drawWheel(currentAngle);
+    } else {
+      document.getElementById('merci-section').style.display = 'flex';
+    }
+
+    // Email : secondaire, fire-and-forget
     if (emailEnabled) {
-      const res = await fetch('https://api.web3forms.com/submit', {
+      fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
@@ -144,19 +148,10 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
           message:    message,
           date:       new Date().toLocaleString('fr-FR'),
         }),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-    }
-    document.getElementById('form-section').style.display = 'none';
-    if (rouletteEnabled) {
-      document.getElementById('roulette-section').style.display = 'flex';
-      drawWheel(currentAngle);
-    } else {
-      document.getElementById('merci-section').style.display = 'flex';
+      }).catch(() => {});
     }
   } catch (err) {
-    console.error('Web3Forms error:', err);
+    console.error('Firestore error:', err);
     statusEl.textContent = 'Une erreur est survenue. Veuillez réessayer.';
     statusEl.className   = 'status error';
     submitBtn.disabled   = false;
@@ -177,12 +172,14 @@ const PRIZES = [
 // Préchargement des images
 PRIZES.forEach(p => {
   p.img = new Image();
-  p.img.onload = () => drawWheel(currentAngle);
+  p.img.onload  = () => drawWheel(currentAngle);
+  p.img.onerror = () => drawWheel(currentAngle);
   p.img.src = p.imgSrc;
 });
 
 const bkLogoImg = new Image();
-bkLogoImg.onload = () => drawWheel(currentAngle);
+bkLogoImg.onload  = () => drawWheel(currentAngle);
+bkLogoImg.onerror = () => drawWheel(currentAngle);
 bkLogoImg.src = 'images/bk-logo.png';
 
 const wheelCanvas = document.getElementById('wheel');
@@ -190,6 +187,12 @@ const spinBtn     = document.getElementById('spin-btn');
 // -7π/10 centre le segment 0 sous le pointeur (5 segments × 72°)
 let currentAngle  = -Math.PI * 7 / 10;
 let isSpinning    = false;
+
+if (DEBUG) {
+  document.getElementById('form-section').style.display     = 'none';
+  document.getElementById('roulette-section').style.display = 'flex';
+  drawWheel(currentAngle);
+}
 
 function drawWheel(angle) {
   const ctx   = wheelCanvas.getContext('2d');
