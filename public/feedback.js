@@ -36,8 +36,9 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-let rouletteEnabled = true;
-let emailEnabled = true;
+let rouletteEnabled  = true;
+let emailEnabled     = true;
+let cooldownEnabled  = true;
 const CONFIG_COL  = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_COLLECTION : 'config';
 const CONFIG_DOC  = (typeof CONFIG !== 'undefined') ? CONFIG.FIRESTORE_CONFIG_DOC : 'settings';
 const AVIS_COL      = (typeof CONFIG !== 'undefined') ? CONFIG.AVIS_COLLECTION      : 'avis';
@@ -49,6 +50,11 @@ const configPromise = db.collection(CONFIG_COL).doc(CONFIG_DOC).get()
       const data = doc.data();
       rouletteEnabled = data.roulette_enabled !== false;
       emailEnabled    = data.email_enabled    !== false;
+      cooldownEnabled = data.cooldown_enabled !== false;
+      if (!cooldownEnabled) {
+        document.getElementById('form-section').style.display    = '';
+        document.getElementById('already-section').style.display = 'none';
+      }
     }
   })
   .catch(() => {});
@@ -122,10 +128,12 @@ document.getElementById('feedback-form').addEventListener('submit', async e => {
       clientId:  clientId,
     });
 
-    localStorage.setItem('bk_last_submit', Date.now());
-    db.collection(COOLDOWNS_COL).doc(clientId).set({
-      lastSubmit: firebase.firestore.FieldValue.serverTimestamp(),
-    }).catch(() => {});
+    if (cooldownEnabled) {
+      localStorage.setItem('bk_last_submit', Date.now());
+      db.collection(COOLDOWNS_COL).doc(clientId).set({
+        lastSubmit: firebase.firestore.FieldValue.serverTimestamp(),
+      }).catch(() => {});
+    }
 
     // Firestore = source de vérité → succès immédiat
     document.getElementById('form-section').style.display = 'none';

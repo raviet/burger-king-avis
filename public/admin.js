@@ -67,6 +67,7 @@ function messageForError(code) {
 let unsubscribe     = null;
 let unsubscribeAvis = null;
 let lastAvis        = [];
+let lastVisitTs     = 0;
 
 function showLogin() {
   document.getElementById('login-section').style.display    = 'flex';
@@ -82,6 +83,9 @@ function showDashboard(user) {
   document.getElementById('dashboard-section').style.display = 'flex';
   document.getElementById('user-info').textContent = user.email;
 
+  lastVisitTs = +(localStorage.getItem('bk_admin_last_visit') || 0);
+  localStorage.setItem('bk_admin_last_visit', Date.now());
+
   try {
     db.collection(AVIS_COL).count().get()
       .then(snap => { document.getElementById('stat-total').textContent = snap.data().count; })
@@ -92,7 +96,7 @@ function showDashboard(user) {
     .orderBy('timestamp', 'desc')
     .limit(500)
     .onSnapshot(snapshot => {
-      updateStats(snapshot.docs.map(d => d.data()));
+      updateStats(snapshot.docs.map(d => d.data()), lastVisitTs);
     }, () => {
       document.getElementById('stat-total').textContent = '–';
     });
@@ -109,9 +113,15 @@ function showDashboard(user) {
     const emailToggle = document.getElementById('email-toggle');
     emailToggle.checked = email;
     updateEmailUI(email);
+
+    const cooldown = data.cooldown_enabled !== false;
+    const cooldownToggle = document.getElementById('cooldown-toggle');
+    cooldownToggle.checked = cooldown;
+    updateCooldownUI(cooldown);
   }, () => {
     document.getElementById('toggle-sub').textContent = 'Erreur de lecture';
     document.getElementById('email-toggle-sub').textContent = 'Erreur de lecture';
+    document.getElementById('cooldown-toggle-sub').textContent = 'Erreur de lecture';
   });
 
 }
@@ -156,6 +166,26 @@ function updateEmailUI(enabled) {
     : '<span class="status-dot status-off"></span>Désactivé – aucun email envoyé';
 }
 
+document.getElementById('cooldown-toggle').addEventListener('change', async e => {
+  const enabled = e.target.checked;
+  updateCooldownUI(enabled);
+  try {
+    await CONFIG_REF.set({ cooldown_enabled: enabled }, { merge: true });
+    setStatusLine('Sauvegardé ✓', 2000);
+  } catch (err) {
+    setStatusLine('Erreur de sauvegarde', 3000);
+    e.target.checked = !enabled;
+    updateCooldownUI(!enabled);
+  }
+});
+
+function updateCooldownUI(enabled) {
+  const sub = document.getElementById('cooldown-toggle-sub');
+  sub.innerHTML = enabled
+    ? '<span class="status-dot status-on"></span>Activé – 1 avis par personne par 24h'
+    : '<span class="status-dot status-off"></span>Désactivé – plusieurs avis autorisés (test)';
+}
+
 let statusTimer = null;
 function setStatusLine(text, duration) {
   const el = document.getElementById('status-line');
@@ -166,8 +196,29 @@ function setStatusLine(text, duration) {
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
 
-function updateStats(avis) {
+function updateStats(avis, lastVisit = 0) {
   lastAvis = avis;
+
+  // Fallback si count() a échoué
+  const totalEl = document.getElementById('stat-total');
+  if (totalEl.textContent === '–') totalEl.textContent = avis.length;
+
+  const badgeEl = document.getElementById('stat-new-badge');
+  if (lastVisit > 0) {
+    const newCount = avis.filter(a => {
+      if (!a.timestamp) return false;
+      const ts = a.timestamp.toDate ? a.timestamp.toDate().getTime() : +a.timestamp;
+      return ts > lastVisit;
+    }).length;
+    if (newCount > 0) {
+      badgeEl.textContent = `+${newCount}`;
+      badgeEl.style.display = '';
+    } else {
+      badgeEl.style.display = 'none';
+    }
+  } else {
+    badgeEl.style.display = 'none';
+  }
   const total   = avis.length;
   const byStars = { 1: 0, 2: 0, 3: 0, 4: 0 };
   const byPrize = {};

@@ -26,7 +26,8 @@ service cloud.firestore {
                     && request.resource.data.message.size() >= 1
                     && request.resource.data.message.size() <= 2000
                     && (
-                      !exists(/databases/$(database)/documents/cooldowns/$(request.resource.data.clientId))
+                      (exists(/databases/$(database)/documents/config/settings) && get(/databases/$(database)/documents/config/settings).data.get('cooldown_enabled', true) == false)
+                      || !exists(/databases/$(database)/documents/cooldowns/$(request.resource.data.clientId))
                       || get(/databases/$(database)/documents/cooldowns/$(request.resource.data.clientId)).data.lastSubmit < request.time - duration.value(1, 'd')
                     );
       allow update: if request.auth != null;
@@ -42,7 +43,8 @@ service cloud.firestore {
                     && request.resource.data.message.size() >= 1
                     && request.resource.data.message.size() <= 2000
                     && (
-                      !exists(/databases/$(database)/documents/cooldowns-dev/$(request.resource.data.clientId))
+                      (exists(/databases/$(database)/documents/config-dev/settings) && get(/databases/$(database)/documents/config-dev/settings).data.get('cooldown_enabled', true) == false)
+                      || !exists(/databases/$(database)/documents/cooldowns-dev/$(request.resource.data.clientId))
                       || get(/databases/$(database)/documents/cooldowns-dev/$(request.resource.data.clientId)).data.lastSubmit < request.time - duration.value(1, 'd')
                     );
       allow update: if request.auth != null;
