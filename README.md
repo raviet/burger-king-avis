@@ -168,4 +168,17 @@ Responsive mobile-first.
 
 ## TODO
 
+**Priorité haute**
 - [ ] Générer QR code → https://burger-king-avis.web.app → imprimer en restaurant
+- [ ] Export CSV avis depuis dashboard admin (client-side pur)
+
+**Priorité moyenne**
+- [ ] Filtre temporel graphique : dropdown 7j / 14j / 30j / tout (hardcodé 14j actuellement)
+- [ ] Badge "nouveaux avis" dans admin (timestamp dernière visite)
+- [ ] Notification email quotidienne — résumé 24h (Web3Forms ou Cloud Function)
+- [ ] Recherche texte dans `/avis` (filtre client sur `message`)
+
+**Priorité basse**
+- [ ] Validation roulette côté serveur — token Firestore one-shot (si fraude devient problème)
+- [ ] Soft delete avis — champ `deleted: bool` + filtre admin (rules actuellement `delete: false`)
+- [ ] Multi-restaurant — `restaurantId` dans URL (architecture le permet)

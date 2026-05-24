@@ -66,6 +66,7 @@ function messageForError(code) {
 
 let unsubscribe     = null;
 let unsubscribeAvis = null;
+let lastAvis        = [];
 
 function showLogin() {
   document.getElementById('login-section').style.display    = 'flex';
@@ -81,9 +82,11 @@ function showDashboard(user) {
   document.getElementById('dashboard-section').style.display = 'flex';
   document.getElementById('user-info').textContent = user.email;
 
-  db.collection(AVIS_COL).count().get()
-    .then(snap => { document.getElementById('stat-total').textContent = snap.data().count; })
-    .catch(() => {});
+  try {
+    db.collection(AVIS_COL).count().get()
+      .then(snap => { document.getElementById('stat-total').textContent = snap.data().count; })
+      .catch(() => {});
+  } catch (_) {}
 
   unsubscribeAvis = db.collection(AVIS_COL)
     .orderBy('timestamp', 'desc')
@@ -164,6 +167,7 @@ function setStatusLine(text, duration) {
 // ── Stats ─────────────────────────────────────────────────────────────────────
 
 function updateStats(avis) {
+  lastAvis = avis;
   const total   = avis.length;
   const byStars = { 1: 0, 2: 0, 3: 0, 4: 0 };
   const byPrize = {};
@@ -211,13 +215,30 @@ function updateStats(avis) {
     tauxEl.style.display   = 'flex';
   }
 
-  drawTemporalChart(avis);
+  drawTemporalChart(avis, +(document.getElementById('chart-range').value));
 }
 
 // ── Graphique temporel ────────────────────────────────────────────────────────
 
-function drawTemporalChart(avis) {
-  const DAYS    = 14;
+document.getElementById('chart-range').addEventListener('change', e => {
+  drawTemporalChart(lastAvis, +e.target.value);
+});
+
+function drawTemporalChart(avis, days) {
+  const today = new Date();
+  let DAYS;
+  if (!days) {
+    // "Tout" : span from earliest avis to today
+    let earliest = new Date();
+    avis.forEach(a => {
+      if (!a.timestamp) return;
+      const d = a.timestamp.toDate ? a.timestamp.toDate() : new Date(a.timestamp);
+      if (d < earliest) earliest = d;
+    });
+    DAYS = Math.max(7, Math.ceil((today - earliest) / 86400000) + 1);
+  } else {
+    DAYS = days;
+  }
   const canvas  = document.getElementById('temporal-chart');
   const dpr     = window.devicePixelRatio || 1;
   const cssW    = canvas.clientWidth || 320;
@@ -234,7 +255,6 @@ function drawTemporalChart(avis) {
   const H = cssH;
 
   // Build last DAYS buckets (day keys: "YYYY-MM-DD")
-  const today   = new Date();
   const buckets = [];
   for (let i = DAYS - 1; i >= 0; i--) {
     const d = new Date(today);
@@ -289,12 +309,22 @@ function drawTemporalChart(avis) {
     ctx.fillStyle = b.count > 0 ? '#FF8732' : 'rgba(80,35,20,.1)';
     ctx.fill();
 
-    // Label (every 2 days to avoid crowding)
-    if (i % 2 === 0) {
+    // Label step: ~1 label per week regardless of range
+    const labelStep = Math.ceil(DAYS / 7);
+    if (i % labelStep === 0) {
+      const cx = x + barW / 2;
+      // Tick line from bar baseline to label
+      ctx.beginPath();
+      ctx.moveTo(cx, BAR_AREA + 3);
+      ctx.lineTo(cx, H - 12);
+      ctx.strokeStyle = 'rgba(80,35,20,.15)';
+      ctx.lineWidth   = 1;
+      ctx.stroke();
+
       ctx.fillStyle = 'rgba(80,35,20,.4)';
       ctx.font      = '600 9px Nunito, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(b.label, x + barW / 2, H - 2);
+      ctx.fillText(b.label, cx, H - 2);
     }
   });
 }

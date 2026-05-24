@@ -337,6 +337,19 @@
       font-weight: 700;
       color: rgba(80,35,20,.45);
     }
+    #chart-range {
+      font-family: 'Nunito', sans-serif;
+      font-size: .78rem;
+      font-weight: 700;
+      color: rgba(80,35,20,.6);
+      border: 1.5px solid rgba(80,35,20,.25);
+      border-radius: 8px;
+      background: transparent;
+      padding: 2px 6px;
+      cursor: pointer;
+      outline: none;
+    }
+    #chart-range:focus { border-color: var(--red); }
     #temporal-chart {
       width: 100%;
       height: 80px;
@@ -440,9 +453,15 @@
 
       <div class="chart-wrap">
         <div class="chart-header">
-          <div class="chart-title">14 derniers jours</div>
-          <div class="chart-meta" id="chart-meta"></div>
+          <div class="chart-title">Avis par jour</div>
+          <select id="chart-range">
+            <option value="7">7 jours</option>
+            <option value="14" selected>14 jours</option>
+            <option value="30">30 jours</option>
+            <option value="0">Tout</option>
+          </select>
         </div>
+        <div class="chart-meta" id="chart-meta"></div>
         <canvas id="temporal-chart"></canvas>
       </div>
     </div>
