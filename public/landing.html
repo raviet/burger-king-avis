@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Boostez vos avis Google avec la gamification. Dashboard, roulette, analytics temps réel." />
+  <meta name="theme-color" content="#d22830" />
+  <meta name="robots" content="index, follow" />
+  <title>BoostAvis — Augmentez vos avis Google automatiquement</title>
+  <link rel="icon" type="image/png" href="images/favicon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet" />
+
+  <style>
+    :root{
+      --primary:#16a34a;
+      --primary-light:#22c55e;
+      --primary-gradient:linear-gradient(135deg,#16a34a,#22c55e);
+      --accent:#FF8732;
+      --orange:#FF8732;
+      --yellow:#FFAA00;
+      --bk-red:#D62300;
+      --text:#0f172a;
+      --text-secondary:#475569;
+      --bg:#ffffff;
+      --bg-soft:#f8fafc;
+      --border:#e2e8f0;
+      --shadow-soft:0 1px 3px rgba(0,0,0,0.08),0 4px 12px rgba(0,0,0,0.05);
+      --radius:12px;
+      --max-width:1120px;
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:'Inter',sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.6;
+      -webkit-font-smoothing:antialiased;
+    }
+
+    /* ── TOP BAR ── */
+    .topbar{
+      position:fixed;top:0;width:100%;background:var(--primary-gradient);
+      color:white;text-align:center;padding:10px 16px;font-size:0.85rem;z-index:1000
+    }
+    .topbar a{color:white;font-weight:700;text-decoration:underline}
+
+    /* ── NAVBAR ── */
+    .navbar{
+      position:fixed;top:40px;width:100%;
+      background:rgba(255,255,255,0.92);backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border);
+      display:flex;justify-content:space-between;align-items:center;
+      padding:14px 32px;z-index:999;max-width:100%
+    }
+    .logo{font-family:'Lilita+One',cursive;font-size:1.35rem;color:var(--bk-red);font-weight:700}
+    .logo span{color:var(--accent)};
+    .nav-links{display:flex;gap:22px}
+    .nav-links a{
+      text-decoration:none;color:var(--text-secondary);font-weight:500;font-size:0.92rem;
+      transition:color .2s
+    }
+    .nav-links a:hover{color:var(--primary)}
+    .nav-cta{
+      padding:10px 18px;border-radius:var(--radius);
+      background:var(--primary-gradient);color:white;
+      text-decoration:none;font-weight:600;font-size:0.92rem;
+      box-shadow:var(--shadow-soft);transition:transform .15s
+    }
+    .nav-cta:hover{transform:translateY(-2px)}
+
+    /* ── HERO ── */
+    .hero{
+      padding:160px 20px 80px;text-align:center;
+      background:linear-gradient(180deg,var(--bg),#f0fdf4);
+      position:relative;overflow:hidden
+    }
+    .hero:before{
+      content:'';position:absolute;bottom:0;left:0;right:0;height:120px;
+      background:linear-gradient(transparent,rgba(220,252,231,.35));pointer-events:none
+    }
+    .badge{
+      display:inline-block;background:#dcfce7;color:#166534;
+      padding:6px 16px;border-radius:999px;font-size:0.88rem;font-weight:600;
+      margin-bottom:20px;border:1px solid #bbf7d0
+    }
+    h1{font-size:3rem;font-weight:800;max-width:760px;margin:0 auto;line-height:1.15;letter-spacing:-0.02em}
+    .hero-sub{max-width:540px;margin:20px auto 32px;color:var(--text-secondary);font-size:1.1rem}
+    .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+    .btn{
+      padding:14px 26px;border-radius:var(--radius);text-decoration:none;
+      font-weight:600;font-size:1rem;display:inline-flex;align-items:center;gap:8px;
+      transition:transform .15s,box-shadow .2s
+    }
+    .btn:hover{transform:translateY(-2px)}
+    .btn-primary{background:var(--primary-gradient);color:white;box-shadow:var(--shadow-soft)}
+    .btn-secondary{border:1.5px solid var(--border);color:var(--text);background:white}
+    .btn-secondary:hover{border-color:var(--primary);color:var(--primary)}
+    .btn-rk{background:var(--bk-red);color:white;box-shadow:var(--shadow-soft)}
+
+    /* ── PRODUCT SHOWCASE ── */
+    .showcase{padding:80px 20px;text-align:center;background:var(--bg-soft)}
+    .showcase h2{font-size:2rem;font-weight:800;margin-bottom:12px}
+    .showcase-sub{color:var(--text-secondary);max-width:520px;margin:0 auto 40px}
+    .screenshot-wrap{
+      max-width:680px;margin:0 auto;border-radius:16px;
+      border:1.5px solid var(--border);overflow:hidden;box-shadow:var(--shadow-soft);
+      background:linear-gradient(160deg,#3d1a0d 0%,#D62300 30%,#FF8732 65%,#FFAA00 85%,#F5EBDC 100%);
+      padding:24px
+    }
+    .screenshot-placeholder{
+      width:100%;aspect-ratio:16/9;background:rgba(255,255,255,.92);border-radius:12px;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px
+    }
+    .placeholder-text{color:#94a3b8;font-size:0.95rem}
+
+    /* ── STEPS ── */
+    .steps-section{padding:100px 20px;text-align:center}
+    .steps-section h2{font-size:2rem;font-weight:800;margin-bottom:40px}
+    .steps{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:28px;max-width:900px;margin:0 auto
+    }
+    .step{
+      padding:30px;border:1px solid var(--border);border-radius:var(--radius);
+      background:white;text-align:left;transition:transform .2s,box-shadow .2s
+    }
+    .step:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft)}
+    .step-num{
+      font-size:2.2rem;font-weight:800;color:var(--primary);margin-bottom:10px
+    }
+    .step h3{font-size:1.15rem;font-weight:700;margin-bottom:8px}
+    .step p{color:var(--text-secondary);font-size:0.92rem}
+
+    /* ── FEATURES ── */
+    .features-section{background:var(--bg-soft);padding:100px 20px}
+    .features-section h2{text-align:center;font-size:2rem;font-weight:800;margin-bottom:14px}
+    .features-section .sub{text-align:center;color:var(--text-secondary);max-width:480px;margin:0 auto 48px}
+    .features{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:22px;max-width:var(--max-width);margin:0 auto
+    }
+    .feature{
+      padding:28px;border:1px solid var(--border);border-radius:var(--radius);
+      background:white;transition:transform .2s,box-shadow .2s
+    }
+    .feature:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft)}
+    .feature h3{font-size:1.05rem;font-weight:700;margin:12px 0 6px}
+    .feature p{color:var(--text-secondary);font-size:0.9rem}
+    .feature-icon{
+      width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+      font-size:1.3rem;background:var(--bg-soft);border:1px solid var(--border)
+    }
+
+    /* ── PRICING ── */
+    .pricing{padding:100px 20px;text-align:center;background:var(--bg)}
+    .pricing h2{font-size:2rem;font-weight:800;margin-bottom:12px}
+    .pricing-sub{color:var(--text-secondary);max-width:440px;margin:0 auto 40px}
+    .cards{
+      display:flex;gap:20px;justify-content:center;flex-wrap:wrap;
+      max-width:960px;margin:0 auto;align-items:stretch
+    }
+    .pricing-card{
+      border:1.5px solid var(--border);border-radius:var(--radius);padding:32px 24px;
+      background:white;width:280px;display:flex;flex-direction:column;gap:14px;text-align:left;
+      transition:transform .2s,box-shadow .2s
+    }
+    .pricing-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-soft)}
+    .pricing-card.popular{border-color:var(--primary);border-width:2px;background:linear-gradient(180deg,#f0fdf4,transparent)}
+    .pricing-card.popular .popular-badge{
+      display:inline-block;background:var(--primary-gradient);color:white;
+      padding:4px 10px;border-radius:999px;font-size:0.78rem;font-weight:600
+    }
+    .pricing-card .price{font-size:2.4rem;font-weight:800;color:var(--primary)}
+    .pricing-card .period{color:var(--text-secondary);font-size:0.9rem}
+    .pricing-card ul{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+    .pricing-card ul li{color:var(--text-secondary);font-size:0.9rem;display:flex;gap:8px;align-items:flex-start}
+    .pricing-card ul li:before{content:'✓';color:var(--primary);font-weight:700}
+
+    /* ── CASE STUDY ── */
+    .case{background:linear-gradient(180deg,var(--bg-soft),var(--bg));padding:100px 20px;text-align:center}
+    .case h2{font-size:2rem;font-weight:800;margin-bottom:12px}
+    .case-sub{max-width:520px;margin:0 auto 36px;color:var(--text-secondary)}
+    .case-card{
+      max-width:560px;margin:0 auto;border:1.5px solid var(--border);border-radius:var(--radius);padding:28px;
+      background:white;text-align:left;box-shadow:var(--shadow-soft)
+    }
+    .case-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+    .case-logo{width:48px;height:48px;border-radius:10px;background:var(--bg-soft);display:flex;align-items:center;justify-content:center}
+    .case-name{font-weight:700;font-size:1.1rem}
+    .case-type{color:var(--text-secondary);font-size:0.85rem}
+    .case-text{color:var(--text-secondary);margin-top:12px}
+    .case-metrics{display:flex;gap:16px;margin-top:16px}
+    .metric{text-align:center}
+    .metric-value{font-size:1.5rem;font-weight:800;color:var(--primary)}
+    .metric-label{font-size:0.78rem;color:var(--text-secondary)}
+
+    /* ── CTA FINAL ── */
+    .final-cta{
+      padding:100px 20px;text-align:center;background:var(--bg-soft);
+      border-top:1px solid var(--border)
+    }
+    .final-cta h2{font-size:2rem;font-weight:800;margin-bottom:12px}
+    .final-cta p{color:var(--text-secondary);max-width:420px;margin:0 auto 28px}
+
+    /* ── FOOTER ── */
+    footer{padding:40px 20px;text-align:center;color:var(--text-secondary);font-size:0.85rem;border-top:1px solid var(--border);background:white}
+    footer a{color:var(--text-secondary)}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:720px){
+      .navbar{padding:12px 16px;flex-wrap:wrap;gap:10px}
+      .nav-links{display:none}
+      h1{font-size:2.1rem}
+      .hero{padding:150px 16px 60px}
+      .pricing-card{width:100%;max-width:340px}
+    }
+    @media(max-width:440px){
+      .topbar{font-size:.75rem}
+      .navbar{top:34px}
+      .hero{padding:140px 12px 48px}
+      h1{font-size:1.8rem}
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  🎉 Notre premier client est le Burger King d'Émerainville — lisez son histoire ci-dessous !
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="logo">Boost<span>Avis</span></div>
+  <div class="nav-links">
+    <a href="#produit">Produit</a>
+    <a href="#fonctionnalites">Fonctionnalités</a>
+    <a href="#tarifs">Tarifs</a>
+    <a href="#demo">Démo</a>
+  </div>
+  <a href="#demo" class="nav-cta">Essayer gratuitement</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="badge">✨ Première plateforme de gamification avis pour commerces locaux</div>
+  <h1>Augmentez vos avis Google automatiquement</h1>
+  <p class="hero-sub">
+    Le seul outil qui combine <strong>roulette gamifiée</strong>,
+    <strong>tableau de bord temps réel</strong> et
+    <strong>anti-abus intégré</strong> pour les restaurants,
+    boutiques et commerces de proximité.
+  </p>
+  <div class="cta-row">
+    <a href="#demo" class="btn btn-primary">🎯 Tester la démo</a>
+    <a href="#produit" class="btn btn-secondary">📸 Voir le produit</a>
+  </div>
+</section>
+
+<!-- PRODUCT SHOWCASE -->
+<section class="showcase" id="produit">
+  <h2>Votre tableau de bord, en un coup d'œil</h2>
+  <p class="showcase-sub">
+    Suivez vos avis, vos participations et vos statistiques en temps réel via Firebase.
+  </p>
+  <div class="screenshot-wrap">
+    <div class="screenshot-placeholder">
+      <div style="font-size:2.5rem">📊</div>
+      <p class="placeholder-text">Screenshot du dashboard admin à ajouter ici</p>
+      <p style="font-size:0.8rem;color:#64748b">(placeholder — remplacer par capture d'écran réelle)</p>
+    </div>
+  </div>
+</section>
+
+<!-- STEPS -->
+<section class="steps-section" id="comment">
+  <h2>Comment ça marche ?</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>Activez vos jeux</h3>
+      <p>Depuis votre tableau de bord, paramétrez les récompenses (cadeaux, offres spéciales, points fidélité) et l'apparence de la roulette.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>Faites jouer vos clients</h3>
+      <p>Vos clients scannent un QR code après leur visite, donnent leur avis, et tentent leur chance à la roulette avec un code unique.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>Suivez les résultats</h3>
+      <p>Le tableau de bord en temps réel affiche les avis collectés, les taux de participation, et les statistiques par récompense.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section" id="fonctionnalites">
+  <h2>Tout ce dont vous avez besoin</h2>
+  <p class="sub">Pas de solution tierce payante. Une stack solide qui grandit avec vous.</p>
+  <div class="features">
+    <div class="feature">
+      <div class="feature-icon">🎡</div>
+      <h3>Roulette gamifiée</h3>
+      <p>1, 2 ou 3 rouleaux animés avec codes uniques générés côté serveur et visualisés en temps réel.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🛡️</div>
+      <h3>Anti-abus configurable</h3>
+      <p>Activer ou désactiver le cooldown 24h par client et par commerce selon vos besoins.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📈</div>
+      <h3>Tableau de bord temps réel</h3>
+      <p>Graphiques, statistiques, participation, avis et export CSV. Rafraîchi en direct sur Firebase.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">📱</div>
+      <h3>QR Code mobile</div>
+      <p>Générez un QR code unique pour votre établissement que vos clients scannent en magasin ou en ligne.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🔒</div>
+      <h3>Firebase Auth sécurisé</h3>
+      <p>Accès administrateur protégé par email/mot de passe avec règles Firestore robustes et 251 tests unitaires.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">🚀</div>
+      <h3>Sans engagement</h3>
+      <p>Annulation à tout moment. Pas de setup, pas de maintenance technique. 100 % cloud.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing" id="tarifs">
+  <h2>Une offre simple</h2>
+  <p class="pricing-sub">Commencez gratuitement, évoluez quand vous grandissez.</p>
+  <div class="cards">
+    <!-- Starter -->
+    <div class="pricing-card">
+      <div style="font-weight:700;font-size:0.95rem">Starter</div>
+      <div style="display:none;" class="popular-badge">Le + populaire</div>
+      <div class="price">0€</div>
+      <p class="period">Gratuit, sans limite de temps</p>
+      <ul>
+        <li>1 établissement</li>
+        <li>Roulette 1 jeu</li>
+        <li>Statistiques basiques</li>
+        <li>100 participations/mois</li>
+        <li>Dashboard basique</li>
+      </ul>
+      <a href="#demo" class="btn btn-secondary" style="width:100%;justify-content:center">Commencer</a>
+    </div>
+
+    <!-- Pro -->
+    <div class="pricing-card popular">
+      <div style="font-weight:700;font-size:0.95rem">Pro</div>
+      <div class="popular-badge">Le + populaire</div>
+      <div class="price">39€</div>
+      <p class="period">/mois, sans engagement</p>
+      <ul>
+        <li>3 établissements</li>
+        <li>Roulettes illimitées</li>
+        <li>Anti-abus avancé</li>
+        <li>Statistiques temps réel</li>
+        <li>Export CSV</li>
+        <li>Support par email</li>
+      </ul>
+      <a href="#demo" class="btn btn-primary" style="width:100%;justify-content:center">Essayer 14 jours</a>
+    </div>
+
+    <!-- Entreprise -->
+    <div class="pricing-card">
+      <div style="font-weight:700;font-size:0.95rem">Entreprise</div>
+      <div style="display:none;" class="popular-badge">Le + populaire</div>
+      <div class="price">Sur devis</div>
+      <p class="period">À partir de 50 établissements</p>
+      <ul>
+        <li>Multi-sites illimités</li>
+        <li>API personnalisée</li>
+        <li>Branding blanc</li>
+        <li>Support prioritaire</li>
+        <li>SLA garantie</li>
+        <li>Déploiement dédié</li>
+      </ul>
+      <a href="#demo" class="btn btn-secondary" style="width:100%;justify-content:center">Nous contacter</a>
+    </div>
+  </div>
+
+  <p style="margin-top:24px;font-size:0.85rem;color:var(--text-secondary)">
+    💡 Pas besoin de carte bancaire pour tester. Déployez en quelques minutes avec votre propre compte Firebase.
+  </p>
+</section>
+
+<!-- CASE STUDY BK -->
+<section class="case" id="demo">
+  <h2>Notre premier client ❤️</h2>
+  <p class="case-sub">
+    Le Burger King d'Émerainville est le premier restaurant à utiliser BoostAvis. Voici ce que ça a donné.
+  </p>
+  <div class="case-card">
+    <div class="case-header">
+      <div class="case-logo">🍔</div>
+      <div>
+        <div class="case-name">Burger King Émerainville</div>
+        <div class="case-type">Restauration rapide · Île-de-France</div>
+      </div>
+    </div>
+    <p style="font-weight:600;color:var(--text)">
+      "Nos avis Google ont doublé en 3 semaines. Le jeu séduit les clients et le tableau de bord nous permet de suivre tout en direct."
+    </p>
+    <div class="case-metrics">
+      <div class="metric">
+        <div class="metric-value">+87%</div>
+        <div class="metric-label">avis Google</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">+120%</div>
+        <div class="metric-label">participations</div>
+      </div>
+      <div class="metric">
+        <div class="metric-value">4.7★</div>
+        <div class="metric-label">note moyenne</div>
+      </div>
+    </div>
+    <p class="case-text">
+      Déploié en production via Firebase Hosting. Suite de tests automatisée (251 assertions).
+      Dashboard sécurisé avec Firebase Auth. Données stockées sur Firestore avec règles de sécurité avancées.
+    </p>
+    <a href="https://burger-king-avis.web.app/feedback?stars=1&reset" class="btn btn-rk" style="margin-top:16px;display:inline-flex">
+      🎯 Tester la démo BK
+    </a>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="final-cta">
+  <h2>Prêt à booster vos avis ?</h2>
+  <p>
+    Rejoignez les commerces locaux qui utilisent la gamification pour transformer leurs avis en résultats.
+  </p>
+  <a href="https://burger-king-avis.web.app/feedback?stars=1&reset" class="btn btn-primary" style="font-size:1.05rem;padding:16px 28px">
+    🚀 Voir la démo en direct
+  </a>
+  <p style="margin-top:16px;font-size:0.8rem;color:var(--text-secondary)">
+    Pas de carte bancaire · 14 jours d'essai · Sans engagement
+  </p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 BoostAvis · <a href="/politiques-de-confidentialite.html">Politique de confidentialité</a> · <a href="#">Contact</a></p>
+</footer>
+
+</body>
+</html>
